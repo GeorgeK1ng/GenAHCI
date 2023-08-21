@@ -6,4 +6,4 @@ https://github.com/microsoftarchive/msdn-code-gallery-microsoft/tree/master/Offi
 This patched source code is based on previously developed patch for Windows 8.0 source code sample by Kai Schtrom
 https://sourceforge.net/projects/storahci-for-windows-2003/
 
-Even it looks like Windows 8.0 to 8.1 is small step, driver code was changed on many places. Almost everything was patched to be compatible with Windows XP
+Even it looks like Windows 8.0 to 8.1 is small step, driver code was changed on many places. Almost everything was patched to be compatible with Windows XP and driver can be succesfully installed or integrated into Windows Setup
