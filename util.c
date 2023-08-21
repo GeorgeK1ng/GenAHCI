@@ -15,6 +15,10 @@ Notes:
 
 Revision History:
 
+        Nathan Obr (natobr),  February 2005 - September 2006 rev 1 (NCQ, LPM, Hotplug, persistant state)
+                              December 2006 - August 2007    rev 2 (async)
+        Michael Xing (xiaoxing),  December 2009 - initial Storport miniport version
+
 --*/
 
 #if _MSC_VER >= 1200
@@ -30,8 +34,8 @@ Revision History:
 
 PAHCI_MEMORY_REGISTERS
 GetABARAddress(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension,
-    _In_ PPORT_CONFIGURATION_INFORMATION ConfigInfo
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension,
+    __in PPORT_CONFIGURATION_INFORMATION_EX ConfigInfo
     )
 /*++
     Search a set of resources (I/O and memory) for an entry corresponding to an AHCI ABAR address.
@@ -232,8 +236,8 @@ Called by:
 
 ULONG
 GetStringLength (
-    _In_ PSTR   String,
-    _In_ ULONG  MaxLength
+    __in PSTR   String,
+    __in ULONG  MaxLength
     )
 /*
     This function returns the length of string. (not include the "NULL" terminator)
@@ -252,8 +256,8 @@ GetStringLength (
 
 VOID
 WMultiStringToAscii(
-    _Inout_ PZZSTR Strings,
-    _In_  ULONG StringBufferLength
+    __inout PZZSTR Strings,
+    __in  ULONG StringBufferLength
     )
 /*+++
 
@@ -288,11 +292,11 @@ WMultiStringToAscii(
     return;
 }
 
-_Success_(return != FALSE)
+__success(return != FALSE)
 BOOLEAN
 StringToULONG (
-    _In_ PSTR InputString,
-    _Out_ PULONG Value
+    __in PSTR InputString,
+    __out PULONG Value
     )
 /*
     This function converts string into an ULONG value
@@ -333,14 +337,14 @@ Return Value:
     return result;
 }
 
-_Success_(return != FALSE)
+__success(return != FALSE)
 BOOLEAN
 CompareId (
-    _In_opt_ PSTR DeviceId,
-    _In_ ULONG  DeviceIdLength,
-    _In_opt_ PZZSTR TargetId,
-    _In_ ULONG  TargetIdLength,
-    _Inout_opt_ PULONG Value
+    __in_opt PSTR DeviceId,
+    __in ULONG  DeviceIdLength,
+    __in_opt PZZSTR TargetId,
+    __in ULONG  TargetIdLength,
+    __inout_opt PULONG Value
 )
 /*++
 Character comparison between DeviceId and TargetId to the min(DeviceIdLength, TargetIdLength)
@@ -425,11 +429,11 @@ Return Value:
 
 VOID
 AhciBusChangeCallback(
-    _In_ PVOID AdapterExtension,
-    _In_opt_ PVOID Context,
-    _In_ SHORT AddressType,
-    _In_ PVOID Address,
-    _In_ ULONG Status
+    __in PVOID AdapterExtension,
+    __in_opt PVOID Context,
+    __in SHORT AddressType,
+    __in PVOID Address,
+    __in ULONG Status
     )
 {
     PAHCI_ADAPTER_EXTENSION adapterExtension = (PAHCI_ADAPTER_EXTENSION)AdapterExtension;
@@ -461,7 +465,7 @@ AhciBusChangeCallback(
 
 VOID
 PortBusChangeProcess (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     AHCI_SERIAL_ATA_CONTROL sctl;
@@ -494,10 +498,10 @@ PortBusChangeProcess (
 
 VOID
 AhciPortBusChangeDpcRoutine(
-    _In_ PSTOR_DPC  Dpc,
-    _In_ PVOID      AdapterExtension,
-    _In_opt_ PVOID  SystemArgument1,
-    _In_opt_ PVOID  SystemArgument2
+    __in PSTOR_DPC  Dpc,
+    __in PVOID      AdapterExtension,
+    __in_opt PVOID  SystemArgument1,
+    __in_opt PVOID  SystemArgument2
     )
 /*++
     Asks port driver to request a QDR on behalf of the miniport
@@ -553,9 +557,9 @@ Affected Variables/Registers:
 
 VOID
 ReleaseSlottedCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ UCHAR SlotNumber,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in UCHAR SlotNumber,
+    __in BOOLEAN AtDIRQL
     )
 /*++
     Performs Completion Data marshalling back into the SRB
@@ -588,7 +592,7 @@ Affected Variables/Registers:
 {
     PSLOT_CONTENT           slotContent;
     PAHCI_SRB_EXTENSION     srbExtension;
-    PSTORAGE_REQUEST_BLOCK  srbToRelease;
+    PSCSI_REQUEST_BLOCK_EX     srbToRelease;
     PATA_TASK_FILE          returnTaskFile;
     BOOLEAN                 isSenseSrb;
     BOOLEAN                 retrySrb = FALSE;
@@ -620,7 +624,7 @@ Affected Variables/Registers:
   //2. Then complete the command
     if (isSenseSrb) {
       //2.1 Handle Request Sense marshalling
-        srbToRelease = (PSTORAGE_REQUEST_BLOCK)SrbGetOriginalRequest(slotContent->Srb);
+        srbToRelease = (PSCSI_REQUEST_BLOCK_EX)SrbGetOriginalRequest(slotContent->Srb);
 
         //that original SRB must have SRB_STATUS_AUTOSENSE_VALID set appropriately
         if (slotContent->Srb->SrbStatus == SRB_STATUS_SUCCESS) {
@@ -759,9 +763,9 @@ Affected Variables/Registers:
 
 VOID
 AhciCompleteJustSlottedRequest(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN AtDIRQL
     )
 /*
     This routine is to complete a request that occupies a slot but has not been issued to adapter yet.
@@ -771,7 +775,7 @@ AhciCompleteJustSlottedRequest(
     PSLOT_CONTENT           slotContent;
     PAHCI_SRB_EXTENSION     srbExtension;
     BOOLEAN                 isSenseSrb;
-    PSTORAGE_REQUEST_BLOCK  srbToComplete;
+    PSCSI_REQUEST_BLOCK_EX     srbToComplete;
 
     srbExtension = GetSrbExtension(Srb);
     slotContent = &ChannelExtension->Slot[srbExtension->QueueTag];
@@ -782,7 +786,7 @@ AhciCompleteJustSlottedRequest(
 
     if (isSenseSrb) {
       // Handle Request Sense marshalling
-        srbToComplete = (PSTORAGE_REQUEST_BLOCK)SrbGetOriginalRequest(Srb);
+        srbToComplete = (PSCSI_REQUEST_BLOCK_EX)SrbGetOriginalRequest(Srb);
 
         //Sense Srb doesn't have chance to run yet, clear Sense Valid flag from original SRB.
         srbToComplete->SrbStatus &= ~SRB_STATUS_AUTOSENSE_VALID;
@@ -824,9 +828,9 @@ AhciCompleteJustSlottedRequest(
 
 VOID
 AhciCompleteRequest(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN AtDIRQL
     )
 /*++
     Wrapper for ComleteRequest to protect against completing the local SRB back to port driver who doesn't know anything about local SRB
@@ -888,7 +892,7 @@ NOTE:
 VOID
 GetAvailableSlot(
     PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    PSTORAGE_REQUEST_BLOCK  Srb
+    PSCSI_REQUEST_BLOCK_EX Srb
     )
 /*++
     Returns the next available slot that can be used for an ATA command in the QueueTag field of the SRB
@@ -923,7 +927,7 @@ Return Value:
     allocated = GetOccupiedSlots(ChannelExtension);
 
   //2.1 Use slot 0 for internal commands, don't increment CCS
-    if (Srb == (PSTORAGE_REQUEST_BLOCK)&ChannelExtension->Local.Srb ) {
+    if (Srb == &ChannelExtension->Local.Srb ) {
         if ((allocated & (1 << 0)) > 0) {
             srbExtension->QueueTag = 0xFF;
         } else {
@@ -965,11 +969,11 @@ getout:
 
 BOOLEAN
 UpdateSetFeatureCommands(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ UCHAR OldFeatures,
-    _In_ UCHAR NewFeatures,
-    _In_ UCHAR OldSectorCount,
-    _In_ UCHAR NewSectorCount
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in UCHAR OldFeatures,
+    __in UCHAR NewFeatures,
+    __in UCHAR OldSectorCount,
+    __in UCHAR NewSectorCount
   )
 /*++
     Edit a PersistentSetting command
@@ -1034,8 +1038,8 @@ Return Value:
 
 VOID
 RestorePreservedSettings(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
   )
 /*++
     Send each of the commands in the PersistentSettings structure one at a time using the local SRB
@@ -1107,9 +1111,9 @@ Affected Variables/Registers:
 
     //3 Starts processing the command. Only need to do the first command if it exists. all others will be done by processing completion routine.
     if (ChannelExtension->Local.Srb.SrbExtension != NULL) {
-        PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension((PSTORAGE_REQUEST_BLOCK)&ChannelExtension->Local.Srb);
+        PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(&ChannelExtension->Local.Srb);
         if (srbExtension->AtaFunction != 0) {
-            AhciProcessIo(ChannelExtension, (PSTORAGE_REQUEST_BLOCK)&ChannelExtension->Local.Srb, AtDIRQL);
+            AhciProcessIo(ChannelExtension, &ChannelExtension->Local.Srb, AtDIRQL);
         }
     }
 
@@ -1160,9 +1164,9 @@ Affected Variables/Registers:
 
   //3 Starts processing the command. Only need to do the first command if it exists. all others will be done by processing completion routine.
     if (ChannelExtension->Local.Srb.SrbExtension != NULL) {
-        PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension((PSTORAGE_REQUEST_BLOCK)&ChannelExtension->Local.Srb);
+        PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(&ChannelExtension->Local.Srb);
         if (srbExtension->AtaFunction != 0) {
-            AhciProcessIo(ChannelExtension, (PSTORAGE_REQUEST_BLOCK)&ChannelExtension->Local.Srb, FALSE);
+            AhciProcessIo(ChannelExtension, &ChannelExtension->Local.Srb, FALSE);
         }
     }
 

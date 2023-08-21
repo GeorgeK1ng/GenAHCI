@@ -1,0 +1,30 @@
+[Disks]
+disk1 = "StorAhci SATA AHCI Controller Driver Diskette x86", \x86\storahci.inf, \x86
+disk2 = "StorAhci SATA AHCI Controller Driver Diskette x64", \x64\storahci.inf, \x64
+
+[Defaults]
+SCSI = storahci_x86
+
+[SCSI]
+storahci_x86 = "StorAhci SATA AHCI Controller x86"
+storahci_x64 = "StorAhci SATA AHCI Controller x64"
+
+[Files.SCSI.storahci_x86]
+driver  = disk1, storahci.sys, storahci
+inf     = disk1, storahci.inf
+catalog = disk1, storahci.cat
+
+[Files.SCSI.storahci_x64]
+driver  = disk2, storahci.sys, storahci
+inf     = disk2, storahci.inf
+catalog = disk2, storahci.cat
+
+[HardwareIds.SCSI.storahci_x86]
+id = "PCI\CC_010601", "storahci" ; Standard SATA AHCI Controller
+
+[HardwareIds.SCSI.storahci_x64]
+id = "PCI\CC_010601", "storahci" ; Standard SATA AHCI Controller
+
+[Config.storahci]
+value = "Parameters\PnpInterface", "5", REG_DWORD, 00000001
+value = "Parameters", "BusType", REG_DWORD, 0000000B

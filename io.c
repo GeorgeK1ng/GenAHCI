@@ -13,6 +13,8 @@ Notes:
 
 Revision History:
 
+        Nathan Obr (natobr),  December 2006 - August 2007    rev 2 (async)
+        Michel Xing (xiaoxing), December 2009   initial Storport miniport version
 --*/
 
 #if _MSC_VER >= 1200
@@ -27,8 +29,8 @@ Revision History:
 
 ULONG
 GetSlotToActivate(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ ULONG                   TargetSlots
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in ULONG                   TargetSlots
     )
 /*++
     Select Slot to activate based on maximum slot number allowed
@@ -164,11 +166,11 @@ Return Value:
 
 VOID
 AddQueue (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _Inout_ PSTORAHCI_QUEUE Queue,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb,
-    _In_ ULONG Signature,
-    _In_ UCHAR Tag
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __inout PSTORAHCI_QUEUE Queue,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in ULONG Signature,
+    __in UCHAR Tag
     )
 /*
 Input Parameters:
@@ -230,15 +232,15 @@ Input Parameters:
     }
 }
 
-PSTORAGE_REQUEST_BLOCK
+PSCSI_REQUEST_BLOCK_EX
 RemoveQueue (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _Inout_ PSTORAHCI_QUEUE Queue,
-    _In_ ULONG Signature,
-    _In_ UCHAR Tag
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __inout PSTORAHCI_QUEUE Queue,
+    __in ULONG Signature,
+    __in UCHAR Tag
     )
 {
-    PVOID nextSrb, foundSrb;
+    PSCSI_REQUEST_BLOCK_EX nextSrb, foundSrb;
     ULONG srbsFound;
 
     //Check to see if the queue is empty
@@ -278,14 +280,14 @@ RemoveQueue (
     if (Queue->CurrentDepth > Queue->DeepestDepth) {
         Queue->DeepestDepth = Queue->CurrentDepth;
     }
-    return (PSTORAGE_REQUEST_BLOCK)nextSrb;
+    return (PSCSI_REQUEST_BLOCK_EX)nextSrb;
 }
 
 
 BOOLEAN
 ActivateQueue(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
     )
 /*++
 
@@ -467,8 +469,8 @@ Return Values:
 __inline
 ULONGLONG
 CalculateTimeDurationIn100ns (
-    _In_ ULONGLONG TimeDuration,
-    _In_ ULONGLONG CounterFrequency
+    __in ULONGLONG TimeDuration,
+    __in ULONGLONG CounterFrequency
     )
 {
     ULONGLONG timeIn100ns = 0;
@@ -498,9 +500,9 @@ CalculateTimeDurationIn100ns (
 
 VOID
 AhciCompleteIssuedSRBs(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ UCHAR SrbStatus,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in UCHAR SrbStatus,
+    __in BOOLEAN AtDIRQL
   )
 /*++
 This function completes a command that has been programmed into a Slot
@@ -706,7 +708,11 @@ Affected Variables/Registers:
 
     cmdTable->CFIS.Auxiliary7_0 = 0;
     cmdTable->CFIS.Auxiliary15_8 = 0;
-    cmdTable->CFIS.Auxiliary23_16 = 0;
+    if ( (ChannelExtension->StateFlags.HybridInfoEnabledOnHiberFile == 1) && IsNCQWriteCommand(srbExtension) ) {
+        cmdTable->CFIS.Auxiliary23_16 = 0x21;   //Hybrid Information valid, Priority 1
+    } else {
+        cmdTable->CFIS.Auxiliary23_16 = 0;
+    }
     cmdTable->CFIS.Auxiliary31_24 = 0;
 }
 
@@ -809,8 +815,8 @@ Affected Variables/Registers:
 
 VOID
 CfistoATA_CFIS(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSLOT_CONTENT SlotContent
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSLOT_CONTENT SlotContent
   )
 /*++
     Populates CFIS structure with an ATA command in the given slot from a CFIS data structure.
@@ -848,7 +854,7 @@ Affected Variables/Registers:
         cmdTable->CFIS.Auxiliary23_16 = 0;
     }
 
-    //
+  //1.1 Map NVCACHE_HINT_PAYLOAD fields to CFIS fields
     // Set common data fields.
     //
     if( IsNCQCommand(srbExtension) ) {
@@ -869,8 +875,8 @@ Affected Variables/Registers:
 
 ULONG
 SRBtoPRDT(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSLOT_CONTENT SlotContent
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSLOT_CONTENT SlotContent
   )
 /*++
 
@@ -964,10 +970,10 @@ Return Values:
 
 VOID
 SRBtoCmdHeader(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSLOT_CONTENT SlotContent,
-    _In_ ULONG Length,
-    _In_ BOOLEAN Reset
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSLOT_CONTENT SlotContent,
+    __in ULONG Length,
+    __in BOOLEAN Reset
     )
 /*++
 It assumes:
@@ -980,9 +986,9 @@ Affected Variables/Registers:
     Command Header
 --*/
 {
-    PAHCI_COMMAND_HEADER    cmdHeader = SlotContent->CmdHeader;
-    PSTORAGE_REQUEST_BLOCK  srb = SlotContent->Srb;
-    PAHCI_SRB_EXTENSION     srbExtension = GetSrbExtension(srb);
+    PAHCI_COMMAND_HEADER cmdHeader = SlotContent->CmdHeader;
+    PSCSI_REQUEST_BLOCK_EX srb = SlotContent->Srb;
+    PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(srb);
 
     UNREFERENCED_PARAMETER(ChannelExtension);
 
@@ -1016,9 +1022,9 @@ Affected Variables/Registers:
 
 BOOLEAN
 AhciProcessIo(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN AtDIRQL
     )
 /*
 This routine does following:
@@ -1137,9 +1143,9 @@ Note: This routine can be called even the Port is stopped.
 
 BOOLEAN
 AhciFormIo(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN AtDIRQL
     )
 /*
     Caller: only AhciProcessIo()
@@ -1229,14 +1235,15 @@ AhciFormIo(
     SRBtoCmdHeader(ChannelExtension, slotContent, prdtLength, FALSE);
 
   //4.1. Get the Command Table's physical address to verify the alignment and program  cmdHeader->CTBA
-    if ((PSTORAGE_REQUEST_BLOCK)&ChannelExtension->Local.Srb == Srb) {
+    if (&ChannelExtension->Local.Srb == Srb) {
         cmdTablePhysicalAddress = ChannelExtension->Local.SrbExtensionPhysicalAddress;
-    } else if ((PSTORAGE_REQUEST_BLOCK)&ChannelExtension->Sense.Srb == Srb) {
+    } else if (&ChannelExtension->Sense.Srb == Srb) {
         cmdTablePhysicalAddress = ChannelExtension->Sense.SrbExtensionPhysicalAddress;
     } else {
         ULONG length;
+        // SRB is needed for StorPortGetPhysicalAddress to calculate logical address when DMAR is enabled.
         cmdTablePhysicalAddress = StorPortGetPhysicalAddress(ChannelExtension->AdapterExtension,
-                                                             NULL,
+                                                             (PSCSI_REQUEST_BLOCK)Srb,
                                                              srbExtension,
                                                              &length);
     }
@@ -1277,16 +1284,16 @@ AhciFormIo(
     return TRUE;
 }
 
-PSCSI_REQUEST_BLOCK
+PSCSI_REQUEST_BLOCK_EX
 BuildRequestSenseSrb(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  FailingSrb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX FailingSrb
     )
 {
     STOR_PHYSICAL_ADDRESS   dataBufferPhysicalAddress;
     ULONG                   length;
     PCDB                    cdb;
-    PSCSI_REQUEST_BLOCK     senseSrb = &ChannelExtension->Sense.Srb;
+    PSCSI_REQUEST_BLOCK_EX     senseSrb = &ChannelExtension->Sense.Srb;
     PAHCI_SRB_EXTENSION     srbExtension = ChannelExtension->Sense.SrbExtension;
     PVOID                   srbSenseBuffer = NULL;
     UCHAR                   srbSenseBufferLength = 0;
@@ -1302,11 +1309,11 @@ BuildRequestSenseSrb(
     }
 
     //2. initialize Srb and SrbExtension structures.
-    AhciZeroMemory((PCHAR)senseSrb, sizeof(SCSI_REQUEST_BLOCK));
+    AhciZeroMemory((PCHAR)senseSrb, sizeof(SCSI_REQUEST_BLOCK_EX));
     AhciZeroMemory((PCHAR)srbExtension, sizeof(AHCI_SRB_EXTENSION));
 
-    //3. setup Srb and CDB. Note that Sense Srb uses SCSI_REQUEST_BLOCK type.
-    senseSrb->Length = sizeof(SCSI_REQUEST_BLOCK);
+    //3. setup Srb and CDB. Note that Sense Srb uses SCSI_REQUEST_BLOCK_EX type.
+    senseSrb->Length = sizeof(SCSI_REQUEST_BLOCK_EX);
     senseSrb->Function = SRB_FUNCTION_EXECUTE_SCSI;
     senseSrb->PathId = (UCHAR)ChannelExtension->PortNumber;
     senseSrb->SrbFlags = SRB_FLAGS_DATA_IN;
@@ -1326,7 +1333,8 @@ BuildRequestSenseSrb(
     srbExtension->AtaFunction = ATA_FUNCTION_REQUEST_SENSE;
     srbExtension->Flags = ATA_FLAGS_DATA_IN;
 
-    dataBufferPhysicalAddress = StorPortGetPhysicalAddress(ChannelExtension->AdapterExtension, NULL, srbSenseBuffer, &length);
+    // SRB is needed for StorPortGetPhysicalAddress to calculate logical address when DMAR is enabled.
+    dataBufferPhysicalAddress = StorPortGetPhysicalAddress(ChannelExtension->AdapterExtension, (PSCSI_REQUEST_BLOCK)FailingSrb, srbSenseBuffer, &length);
     if (dataBufferPhysicalAddress.QuadPart == 0) {
         NT_ASSERT(FALSE);  //Shall Not Pass
         return NULL;
@@ -1343,12 +1351,12 @@ BuildRequestSenseSrb(
 
 VOID
 AhciPortFailAllIos(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ UCHAR   SrbStatus,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in UCHAR   SrbStatus,
+    __in BOOLEAN AtDIRQL
     )
 {
-    PSTORAGE_REQUEST_BLOCK srb;
+    PSCSI_REQUEST_BLOCK_EX srb;
     UCHAR i;
 
     // complete all rquests still in queue
@@ -1375,15 +1383,15 @@ AhciPortFailAllIos(
 
 VOID
 AhciPortSrbCompletionDpcRoutine(
-    _In_ PSTOR_DPC  Dpc,
-    _In_ PVOID      AdapterExtension,
-    _In_opt_ PVOID  SystemArgument1,
-    _In_opt_ PVOID  SystemArgument2
+    __in PSTOR_DPC  Dpc,
+    __in PVOID      AdapterExtension,
+    __in_opt PVOID  SystemArgument1,
+    __in_opt PVOID  SystemArgument2
   )
 {
     PAHCI_CHANNEL_EXTENSION channelExtension = (PAHCI_CHANNEL_EXTENSION)SystemArgument1;
     STOR_LOCK_HANDLE        lockhandle = {0};
-    PSTORAGE_REQUEST_BLOCK  srb = NULL;
+    PSCSI_REQUEST_BLOCK_EX     srb = NULL;
 
     UNREFERENCED_PARAMETER(Dpc);
     UNREFERENCED_PARAMETER(SystemArgument2);

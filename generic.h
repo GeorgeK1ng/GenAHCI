@@ -14,22 +14,25 @@ Notes:
 
 Revision History:
 
+        Michael Xing (xiaoxing),  December 2009
 --*/
 
 
 // common header files
-#include "miniport.h"
-#include "storport.h"
-#include "ata.h"  
+#include "ntddk.h"
+#include ".\inc\ddk\storport.h"
+#include ".\inc\ddk\ata.h"
 
-#include "ntddscsi.h"
+#include ".\inc\api\ntddscsi.h"
 #define DEVICE_TYPE ULONG
-#include "ntddstor.h"
-#include "srbhelper.h"
+#include ".\inc\api\ntddstor.h"
 
 
 
 // storahci header files
+#include "stor_helper.h"
+#include "srb_helper.h"
+#include "StorPortPatch.h"
 #include "common.h"
 #include "ahci.h"
 #include "entrypts.h"

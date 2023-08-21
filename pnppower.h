@@ -14,6 +14,8 @@ Notes:
 
 Revision History:
 
+        Nathan Obr (natobr),  February 2005
+        Michael Xing (xiaoxing),  December 2009
 --*/
 
 #pragma once
@@ -62,113 +64,113 @@ typedef union _AHCI_LPM_POWER_SETTINGS {
 
 BOOLEAN 
 AhciPortInitialize(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     );
 
 BOOLEAN 
 AhciAdapterPowerUp(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     );
 
 BOOLEAN 
 AhciAdapterPowerSettingNotification(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension,
-    _In_ PSTOR_POWER_SETTING_INFO PowerSettingInfo
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension,
+    __in PSTOR_POWER_SETTING_INFO PowerSettingInfo
     );
 
 BOOLEAN 
 AhciAdapterPowerDown(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     );
 
 VOID 
 AhciPortPowerUp(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     );
 
 VOID 
 AhciPortPowerDown(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     );
 
 VOID 
 AhciPortStop(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     );
 
 VOID
 AhciPortSmartCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
   );
 
 VOID
 AhciPortNVCacheCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
   );
 
 VOID
 AhciPortGetInitCommands(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
   );
 
 VOID
 AhciPortEvaluateSDDMethod(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
   );
 
 VOID
 AhciAdapterEvaluateDSMMethod(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
   );
 
 VOID
 AhciPortAcpiDSMControl(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension,
-    _In_ ULONG                   PortNumber,
-    _In_ BOOLEAN                 Sleep
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension,
+    __in ULONG                   PortNumber,
+    __in BOOLEAN                 Sleep
   );
 
 
 VOID
 IssuePreservedSettingCommands(
-    _In_ PAHCI_CHANNEL_EXTENSION    ChannelExtension,
-    _In_opt_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in_opt PSCSI_REQUEST_BLOCK_EX Srb
   );
 
 VOID
 IssueInitCommands(
-    _In_ PAHCI_CHANNEL_EXTENSION    ChannelExtension,
-    _In_opt_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in_opt PSCSI_REQUEST_BLOCK_EX Srb
   );
 
 VOID
 IssueSetDateAndTimeCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _Inout_ PSCSI_REQUEST_BLOCK Srb,
-    _In_ BOOLEAN SendStandBy
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __inout PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN SendStandBy
   );
 
 VOID
 IssueReadLogExtCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ UCHAR  LogAddress,
-    _In_ USHORT PageNumber,
-    _In_ USHORT BlockCount,
-    _In_ USHORT FeatureField,
-    _In_ PSTOR_PHYSICAL_ADDRESS PhysicalAddress,
-    _In_ PVOID DataBuffer,
-    _In_opt_ PSRB_COMPLETION_ROUTINE CompletionRoutine
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in UCHAR  LogAddress,
+    __in USHORT PageNumber,
+    __in USHORT BlockCount,
+    __in USHORT FeatureField,
+    __in PSTOR_PHYSICAL_ADDRESS PhysicalAddress,
+    __in PVOID DataBuffer,
+    __in_opt PSRB_COMPLETION_ROUTINE CompletionRoutine
     );
 
 HW_TIMER_EX AhciAutoPartialToSlumber;
 
 BOOLEAN
 AhciLpmSettingsModes(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ AHCI_LPM_POWER_SETTINGS LpmMode
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in AHCI_LPM_POWER_SETTINGS LpmMode
     );
 
 

@@ -14,6 +14,7 @@ Notes:
 
 Revision History:
 
+        Michael Xing (xiaoxing),  December 2009
 --*/
 
 #pragma once
@@ -27,7 +28,7 @@ Revision History:
 
 #define ATA_BLOCK_SIZE                      512     //0x200
 
-#define MAXULONG                            0xFFFFFFFF  // winnt
+//#define MAXULONG                            0xFFFFFFFF  // winnt
 
 #define ATA_INQUIRYDATA_SIZE                0x3C  // contains 1 Version Descriptor for 1667
 
@@ -56,6 +57,7 @@ Revision History:
 #define ATA_FUNCTION_ATA_WRITE                  0x103
 #define ATA_FUNCTION_ATA_FLUSH                  0x104
 #define ATA_FUNCTION_ATA_SMART                  0x105
+#define ATA_FUNCTION_ATA_HINT_PAYLOAD           0x106
 
 // 0x200 - 0x2FF indicate ATAPI commands
 #define ATA_FUNCTION_ATAPI_COMMAND              0x200
@@ -301,11 +303,19 @@ typedef struct _HYBRID_EVICT_CONTEXT {
 
 } HYBRID_EVICT_CONTEXT, *PHYBRID_EVICT_CONTEXT;
 
+__inline
+BOOLEAN
+IsUnknownDevice(
+    __in PATA_DEVICE_PARAMETERS DeviceParameters
+    )
+{
+    return (DeviceParameters->AtaDeviceType == DeviceUnknown);
+}
 
 __inline
 BOOLEAN
 IsAtapiDevice(
-    _In_ PATA_DEVICE_PARAMETERS DeviceParameters
+    __in PATA_DEVICE_PARAMETERS DeviceParameters
     )
 {
     return (DeviceParameters->AtaDeviceType == DeviceIsAtapi);
@@ -314,7 +324,7 @@ IsAtapiDevice(
 __inline
 BOOLEAN
 IsAtaDevice(
-    _In_ PATA_DEVICE_PARAMETERS DeviceParameters
+    __in PATA_DEVICE_PARAMETERS DeviceParameters
     )
 {
     return (DeviceParameters->AtaDeviceType == DeviceIsAta);
@@ -323,7 +333,7 @@ IsAtaDevice(
 __inline
 BOOLEAN
 IsRemovableMedia(
-    _In_ PATA_DEVICE_PARAMETERS DeviceParameters
+    __in PATA_DEVICE_PARAMETERS DeviceParameters
     )
 {
     return (DeviceParameters->StateFlags.RemovableMedia == 1);
@@ -334,7 +344,7 @@ IsRemovableMedia(
 __inline
 BOOLEAN
 Support48Bit(
-    _In_ PATA_DEVICE_PARAMETERS DeviceParameters
+    __in PATA_DEVICE_PARAMETERS DeviceParameters
     )
 {
     return (DeviceParameters->AddressTranslation == Lba48BitMode);
@@ -344,7 +354,7 @@ Support48Bit(
 __inline
 ULONG
 BytesPerLogicalSector(
-    _In_ PATA_DEVICE_PARAMETERS DeviceParameters
+    __in PATA_DEVICE_PARAMETERS DeviceParameters
     )
 {
     return DeviceParameters->BytesPerLogicalSector;
@@ -353,7 +363,7 @@ BytesPerLogicalSector(
 __inline
 ULONG64
 MaxUserAddressableLba(
-    _In_ PATA_DEVICE_PARAMETERS DeviceParameters
+    __in PATA_DEVICE_PARAMETERS DeviceParameters
     )
 {
     return (DeviceParameters->MaxLba.QuadPart);
@@ -362,11 +372,11 @@ MaxUserAddressableLba(
 __inline
 PCDB
 RequestGetSrbScsiData (
-    _In_ PSTORAGE_REQUEST_BLOCK Srb,
-    _In_opt_ PULONG             CdbLength,
-    _In_opt_ PUCHAR             ScsiStatus,
-    _In_opt_ PVOID*             SenseInfoBuffer,
-    _In_opt_ PUCHAR             SenseInfoBufferLength
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in_opt PULONG             CdbLength,
+    __in_opt PUCHAR             ScsiStatus,
+    __in_opt PVOID*             SenseInfoBuffer,
+    __in_opt PUCHAR             SenseInfoBufferLength
     )
 /*++
 
@@ -398,13 +408,13 @@ Return Value:
         //
         // This is SrbEx - STORAGE_REQUEST_BLOCK
         //
-        cdb = SrbGetScsiData(Srb, (PUCHAR)CdbLength, CdbLength, ScsiStatus, SenseInfoBuffer, SenseInfoBufferLength);
+        cdb = SrbGetScsiData((PSTORAGE_REQUEST_BLOCK)Srb, (PUCHAR)CdbLength, CdbLength, ScsiStatus, SenseInfoBuffer, SenseInfoBufferLength);
 
     }  else if (Srb->Function == SRB_FUNCTION_EXECUTE_SCSI) {
         //
-        // This is legacy SCSI_REQUEST_BLOCK
+        // This is legacy SCSI_REQUEST_BLOCK_EX
         //
-        PSCSI_REQUEST_BLOCK  srb = (PSCSI_REQUEST_BLOCK)Srb;
+        PSCSI_REQUEST_BLOCK_EX  srb = (PSCSI_REQUEST_BLOCK_EX)Srb;
 
         if (CdbLength) {
             *CdbLength = srb->CdbLength;
@@ -451,8 +461,8 @@ Return Value:
 __inline
 ULONG64
 GetLbaFromCdb(
-    _In_ PCDB  Cdb,
-    _In_ ULONG CdbLength
+    __in PCDB  Cdb,
+    __in ULONG CdbLength
     )
 {
     LARGE_INTEGER lba;
@@ -500,8 +510,8 @@ GetSectorCountFromCdb(
 VOID
 __inline
 ByteSwap (
-    _Inout_updates_bytes_(Length) PUCHAR Buffer,
-    _In_                   ULONG Length
+    __inout_bcount(Length) PUCHAR Buffer,
+    __in                   ULONG Length
     )
 /*++
 
@@ -541,8 +551,8 @@ Return Value:
 ULONG
 __inline
 RemoveTrailingBlanks (
-    _Inout_updates_z_(Length) PUCHAR Buffer,
-    _In_                   ULONG Length
+    __inout_bcount(Length) __nullterminated PUCHAR Buffer,
+    __in                   ULONG Length
     )
 /*++
 
@@ -584,13 +594,13 @@ Return Value:
     return (i+1);
 }
 
-_Success_(return == STOR_STATUS_SUCCESS)
+__success(return == STOR_STATUS_SUCCESS)
 ULONG
 __inline
 AhciAllocateDmaBuffer (
-    _In_ PVOID   AdapterExtension,
-    _In_ ULONG   BufferLength,
-    _Post_writable_byte_size_(BufferLength) PVOID* Buffer
+    __in PVOID   AdapterExtension,
+    __in ULONG   BufferLength,
+    __bcount(BufferLength) PVOID* Buffer
     )
 {
     ULONG            status;
@@ -599,7 +609,9 @@ AhciAllocateDmaBuffer (
     PHYSICAL_ADDRESS boundaryPhysicalAddress;
 
     minPhysicalAddress.QuadPart = 0;
-    maxPhysicalAddress.QuadPart = 0x7FFFFFFF;   // (2GB - 1)
+    // if we use 0x7FFFFFFF as the maximum physical address the call to the function
+    // MmAllocateContiguousMemorySpecifyCache in StorPortPatch.c fails
+    maxPhysicalAddress.QuadPart = -1; // maxPhysicalAddress.QuadPart = 0x7FFFFFFF;   // (2GB - 1)
     boundaryPhysicalAddress.QuadPart = 0;
 
 
@@ -614,13 +626,13 @@ AhciAllocateDmaBuffer (
     return status;
 }
 
-_Success_(return == STOR_STATUS_SUCCESS)
+__success(return == STOR_STATUS_SUCCESS)
 ULONG
 __inline
 AhciFreeDmaBuffer (
-    _In_ PVOID      AdapterExtension,
-    _In_ ULONG_PTR  BufferLength,
-    _In_reads_bytes_(BufferLength) _Post_invalid_ PVOID Buffer
+    __in PVOID      AdapterExtension,
+    __in ULONG_PTR  BufferLength,
+    __in_bcount(BufferLength)  PVOID Buffer
     )
 {
     ULONG   status;
@@ -634,7 +646,7 @@ AhciFreeDmaBuffer (
 __inline
 BOOLEAN
 DmaSafeAtapiCommand (
-    _In_ UCHAR CdbCommand
+    __in UCHAR CdbCommand
     )
 {
     ULONG i;
@@ -670,7 +682,7 @@ DmaSafeAtapiCommand (
 __inline
 BOOLEAN
 IsSupportedReadCdb (
-    _In_ PCDB   Cdb
+    __in PCDB   Cdb
     )
 {
     return ((Cdb->CDB10.OperationCode == SCSIOP_READ) || (Cdb->CDB10.OperationCode == SCSIOP_READ16));
@@ -679,7 +691,7 @@ IsSupportedReadCdb (
 __inline
 BOOLEAN
 IsSupportedWriteCdb (
-    _In_ PCDB   Cdb
+    __in PCDB   Cdb
     )
 {
     return ((Cdb->CDB10.OperationCode == SCSIOP_WRITE) || (Cdb->CDB10.OperationCode == SCSIOP_WRITE16));
@@ -693,234 +705,234 @@ typedef struct _AHCI_CHANNEL_EXTENSION
 
 ULONG
 SCSItoATA(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 SrbConvertToATAPICommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtapiCommonRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtapiInquiryRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 AtapiModeSenseRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtapiModeSelectRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 SrbConvertToATACommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb,
-    _In_ ULONG                   CdbLength
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb,
+    __in ULONG                   CdbLength
     );
 
 ULONG
 AtaReadWriteRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb,
-    _In_ ULONG                   CdbLength
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb//,
+    //__in ULONG                   CdbLength
     );
 
 ULONG
 AtaVerifyRequest(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb,
-    _In_ ULONG                   CdbLength
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb,
+    __in ULONG                   CdbLength
     );
 
 ULONG
 AtaModeSenseRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtaModeSelectRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtaReadCapacityRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb,
-    _In_ ULONG                   CdbLength
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb,
+    __in ULONG                   CdbLength
     );
 
 ULONG
 InquiryComplete(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 AtaInquiryRequest(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtaStartStopUnitRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtaTestUnitReadyRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 AtaMediumRemovalRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtaFlushCommandRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 AtaPassThroughRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtaUnmapRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 AtaSecurityProtocolRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb,
+    __in PCDB                    Cdb
     );
 
 ULONG
 AtaReportLunsCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PVOID Context
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PVOID Context
     );
 
 UCHAR
 AtaMapError(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN FUAcommand
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN FUAcommand
     );
 
 VOID
 UpdateDeviceParameters(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     );
 
 VOID
 DeviceInitAtapiIds(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PINQUIRYDATA InquiryData
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PINQUIRYDATA InquiryData
     );
 
 VOID
 AhciPortIdentifyDevice(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
   );
 
 ULONG
 IOCTLtoATA(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 SmartVersion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 BOOLEAN
   FillClippedSGL(
-    _In_    PSTOR_SCATTER_GATHER_LIST SourceSgl,
-    _Inout_ PSTOR_SCATTER_GATHER_LIST LocalSgl,
-    _In_    ULONG BytesLeft,
-    _In_    ULONG BytesNeeded
+    __in    PSTOR_SCATTER_GATHER_LIST SourceSgl,
+    __inout PSTOR_SCATTER_GATHER_LIST LocalSgl,
+    __in    ULONG BytesLeft,
+    __in    ULONG BytesNeeded
     );
 
 ULONG
 SmartIdentifyData(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 SmartGeneric(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 NVCacheGeneric(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 
 ULONG
 HybridIoctlProcess(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 DsmGeneralIoctlProcess(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 ULONG
 DatasetManagementIoctl(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 

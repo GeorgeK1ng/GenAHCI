@@ -14,6 +14,8 @@ Notes:
 
 Revision History:
 
+        Nathan Obr (natobr),  February 2005
+        Michael Xing (xiaoxing),  December 2009
 --*/
 
 #pragma once

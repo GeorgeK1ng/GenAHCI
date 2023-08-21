@@ -15,6 +15,8 @@ Notes:
 
 Revision History:
 
+        Michael Xing (xiaoxing),  December 2009 - initial Storport miniport version
+
 --*/
 
 #if _MSC_VER >= 1200
@@ -57,8 +59,8 @@ AhciGPLogPageIntoPrivate =  IDE_GP_LOG_CURRENT_DEVICE_INTERNAL_STATUS;
 
 ULONG
 DriverEntry(
-    _In_ PVOID Argument1,    //IN PDRIVER_OBJECT  DriverObject,
-    _In_ PVOID Argument2     //IN PUNICODE_STRING  RegistryPath
+    __in PVOID Argument1,    //IN PDRIVER_OBJECT  DriverObject,
+    __in PVOID Argument2     //IN PUNICODE_STRING  RegistryPath
     )
 
 /*++
@@ -79,11 +81,18 @@ Return Value:
 
 {
     ULONG status;
-    HW_INITIALIZATION_DATA hwInitializationData = {0};
+    HW_INITIALIZATION_DATA_EX hwInitializationData = {0};
 
     DebugPrint((1, "\tSTORAHCI, Storport AHCI Miniport Driver.\n"));
 
-    hwInitializationData.HwInitializationDataSize = sizeof(HW_INITIALIZATION_DATA);
+    // set correct size of structure HW_INITIALIZATION_DATA, otherwise StorPortInitialize will fail
+#if defined(_WIN64)
+    // structure size of HW_INITIALIZATION_DATA on x64 is 0x88
+    hwInitializationData.HwInitializationDataSize = 0x88; // sizeof(HW_INITIALIZATION_DATA);
+#else
+    // structure size of HW_INITIALIZATION_DATA on x86 is 0x54
+    hwInitializationData.HwInitializationDataSize = 0x54; // sizeof(HW_INITIALIZATION_DATA);
+#endif
 
     // required miniport entry point routines.
     hwInitializationData.HwInitialize = AhciHwInitialize;
@@ -128,7 +137,7 @@ Return Value:
     // call StorPort to register HW init data
     status = StorPortInitialize(Argument1,
                                 Argument2,
-                                &hwInitializationData,
+                                (HW_INITIALIZATION_DATA*)&hwInitializationData,
                                 NULL);
 
     return status;
@@ -137,9 +146,9 @@ Return Value:
 
 BOOLEAN
 AllocateResourcesForAdapter(
-    _In_ PAHCI_ADAPTER_EXTENSION         AdapterExtension,
-    _In_ PPORT_CONFIGURATION_INFORMATION ConfigInfo,
-    _In_range_(1, AHCI_MAX_PORT_COUNT) ULONG PortCount
+    __in PAHCI_ADAPTER_EXTENSION         AdapterExtension,
+    __in PPORT_CONFIGURATION_INFORMATION_EX ConfigInfo,
+    __in ULONG PortCount
     )
 /*
     Internal function to allocate required memory for Ports
@@ -199,7 +208,7 @@ AllocateResourcesForAdapter(
         nonCachedExtensionSize += 0x400 + sizeof(AHCI_CHANNEL_EXTENSION);
     }
 
-    AdapterExtension->NonCachedExtension = StorPortGetUncachedExtension(AdapterExtension, ConfigInfo, nonCachedExtensionSize);
+    AdapterExtension->NonCachedExtension = StorPortGetUncachedExtension(AdapterExtension, (PPORT_CONFIGURATION_INFORMATION)ConfigInfo, nonCachedExtensionSize);
 
     if (AdapterExtension->NonCachedExtension == NULL) {
        // we cannot continue if cannot get nonCachedMemory for Channels.
@@ -267,12 +276,12 @@ AllocateResourcesForAdapter(
 
 
 ULONG AhciHwFindAdapter(
-    _In_ PVOID AdapterExtension,
-    _In_ PVOID HwContext,
-    _In_ PVOID BusInformation,
-    _In_z_ PCHAR ArgumentString,
-    _Inout_ PPORT_CONFIGURATION_INFORMATION ConfigInfo,
-    _In_ PBOOLEAN Reserved3
+    __in PVOID AdapterExtension,
+    __in PVOID HwContext,
+    __in PVOID BusInformation,
+    __in_z PCHAR ArgumentString,
+    __inout PPORT_CONFIGURATION_INFORMATION_EX ConfigInfo,
+    __in PBOOLEAN Reserved3
     )
 /*++
     This function is called by the Storport driver indirectly when handling an IRP_MJ_PnP, IRP_MN_START_DEVICE.
@@ -367,7 +376,8 @@ Note:
     adapterExtension->SlotNumber = ConfigInfo->SlotNumber;
 
   //1.1 Get dump mode
-    adapterExtension->DumpMode = ConfigInfo->DumpMode;
+    // block access beyond end of structure PORT_CONFIGURATION_INFORMATION
+    adapterExtension->DumpMode = FALSE; // ConfigInfo->DumpMode;
 
     if (IsDumpMode(adapterExtension)) {
         if (dumpContext != NULL) {
@@ -493,8 +503,9 @@ Note:
     ConfigInfo->MaximumNumberOfLogicalUnits = 1 /*AHCI_MAX_LUN*/;   //NOTE: only supports 1 for now. there is a legacy ATAPI device that may have 2 luns.
     // set driver to run in full duplex mode
     ConfigInfo->SynchronizationModel = StorSynchronizeFullDuplex;
-    ConfigInfo->BusResetHoldTime = 0;       // StorAHCI wait RESET to be completed by itself, no need for port driver to wait.
-    ConfigInfo->MaxNumberOfIO = portCount * adapterExtension->CAP.NCS;
+    // block access beyond end of structure PORT_CONFIGURATION_INFORMATION
+    // ConfigInfo->BusResetHoldTime = 0;       // StorAHCI wait RESET to be completed by itself, no need for port driver to wait.
+    // ConfigInfo->MaxNumberOfIO = portCount * adapterExtension->CAP.NCS;
 
     if (adapterExtension->CAP.S64A) {
         ConfigInfo->Dma64BitAddresses = SCSI_DMA64_MINIPORT_SUPPORTED;
@@ -503,7 +514,8 @@ Note:
         ConfigInfo->SrbExtensionSize += (ULONG)((ConfigInfo->NumberOfPhysicalBreaks + 2) * 4);
     }
 
-    ConfigInfo->FeatureSupport |= STOR_ADAPTER_FEATURE_STOP_UNIT_DURING_POWER_DOWN;
+    // block access beyond end of structure PORT_CONFIGURATION_INFORMATION
+    // ConfigInfo->FeatureSupport |= STOR_ADAPTER_FEATURE_STOP_UNIT_DURING_POWER_DOWN;
 
   // 3.4.2 update PortImplemented, HighestPort and portCount if necessary
     if (!IsDumpMode(adapterExtension)) {
@@ -658,7 +670,7 @@ Note:
 
 BOOLEAN
 AhciHwInitialize (
-    _In_ PVOID AdapterExtension
+    __in PVOID AdapterExtension
     )
 {
     ULONG                       status = STOR_STATUS_SUCCESS;
@@ -696,7 +708,7 @@ AhciHwInitialize (
 
 BOOLEAN
 AhciHwPassiveInitialize (
-    _In_ PVOID AdapterExtension
+    __in PVOID AdapterExtension
     )
 {
     UCHAR i;
@@ -775,7 +787,7 @@ Exit:
 
 VOID
 AhciAdapterPrepareForBusReScan(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 /*++
 
@@ -806,7 +818,7 @@ Return Value:
 __inline
 VOID
 AdapterStop (
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
 )
 /*++
 
@@ -847,7 +859,7 @@ Return Value:
 
 VOID
 AhciAdapterStop (
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
 )
 /*
     Adapter is being stopped.
@@ -888,7 +900,7 @@ AhciAdapterStop (
 
 VOID
 AhciAdapterRemoval (
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
 )
 /*
     Release resources allocated for the adapter and its managed ports/devices
@@ -951,9 +963,9 @@ AhciAdapterRemoval (
 
 SCSI_ADAPTER_CONTROL_STATUS
 AhciHwAdapterControl (
-    _In_ PVOID AdapterExtension,
-    _In_ SCSI_ADAPTER_CONTROL_TYPE ControlType,
-    _In_ PVOID Parameters
+    __in PVOID AdapterExtension,
+    __in SCSI_ADAPTER_CONTROL_TYPE ControlType,
+    __in PVOID Parameters
     )
 /*++
 
@@ -1017,7 +1029,7 @@ Return Value:
             break;
 
         // ScsiStopAdapter maybe called with PnP or Power activities.
-        // StorAHCI supports PnP Srb and ScsiAdapterPower thus does nothing for ScsiStopAdapter.
+        // StorAHCI supports PnP Srb and ScsiAdapterPower thus does nothing for ScsiStopAdapter. return value is ScsiAdapterControlSuccess.
         // NOTE: ScsiStopAdapter is called after PnP call -StorRemoveDevice or StorSurpriseRemoval,
         // thus resource release should be done here.
         case ScsiStopAdapter:
@@ -1129,8 +1141,8 @@ Return Value:
 
 BOOLEAN
 AhciHwResetBus (
-    _In_ PVOID AdapterExtension,
-    _In_ ULONG PathId
+    __in PVOID AdapterExtension,
+    __in ULONG PathId
     )
 /*
     Used to Reset the PathId/Port/Channel
@@ -1152,8 +1164,8 @@ AhciHwResetBus (
 
 BOOLEAN
 AhciHwBuildIo (
-    _In_ PVOID AdapterExtension,
-    _In_ PSCSI_REQUEST_BLOCK Srb
+    __in PVOID AdapterExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PAHCI_ADAPTER_EXTENSION adapterExtension = (PAHCI_ADAPTER_EXTENSION)AdapterExtension;
@@ -1168,9 +1180,9 @@ AhciHwBuildIo (
     NT_ASSERT(Srb->Function == SRB_FUNCTION_STORAGE_REQUEST_BLOCK);
 
     // SrbExtension is not Null-ed by Storport, so do it here.
-    AhciZeroMemory((PCHAR)GetSrbExtension((PSTORAGE_REQUEST_BLOCK)Srb), sizeof(AHCI_SRB_EXTENSION));
+    AhciZeroMemory((PCHAR)GetSrbExtension(Srb), sizeof(AHCI_SRB_EXTENSION));
 
-    RequestGetSrbScsiData((PSTORAGE_REQUEST_BLOCK)Srb, NULL, NULL, &srbSenseBuffer, &srbSenseBufferLength);
+    RequestGetSrbScsiData((PSCSI_REQUEST_BLOCK_EX)Srb, NULL, NULL, &srbSenseBuffer, &srbSenseBufferLength);
 
     if ((srbSenseBuffer != NULL) && (srbSenseBufferLength > 0)) {
         AhciZeroMemory((PCHAR)srbSenseBuffer, srbSenseBufferLength);
@@ -1189,8 +1201,8 @@ AhciHwBuildIo (
 
 BOOLEAN
 AhciHwStartIo (
-    _In_ PVOID AdapterExtension,
-    _In_ PSCSI_REQUEST_BLOCK Srb
+    __in PVOID AdapterExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 /*
     1. Process Adapter request
@@ -1210,7 +1222,7 @@ AhciHwStartIo (
   //1 Work on Adapter requests
     switch (function) {
         case SRB_FUNCTION_PNP: {
-            PSRBEX_DATA_PNP pnpData = (PSRBEX_DATA_PNP)SrbGetSrbExDataByType((PSTORAGE_REQUEST_BLOCK)Srb, SrbExDataTypePnP);
+            PSCSI_PNP_REQUEST_BLOCK pnpData = (PSCSI_PNP_REQUEST_BLOCK)Srb;
 
             NT_ASSERT(pnpData != NULL);
 
@@ -1234,7 +1246,7 @@ AhciHwStartIo (
             break;
         }
         case SRB_FUNCTION_POWER: {
-            PSRBEX_DATA_POWER powerData = (PSRBEX_DATA_POWER)SrbGetSrbExDataByType((PSTORAGE_REQUEST_BLOCK)Srb, SrbExDataTypePower);
+            PSCSI_POWER_REQUEST_BLOCK powerData = (PSCSI_POWER_REQUEST_BLOCK)Srb;
 
             NT_ASSERT(powerData != NULL);
 
@@ -1288,7 +1300,7 @@ AhciHwStartIo (
         }
 
         case SRB_FUNCTION_PNP: {
-            PSRBEX_DATA_PNP pnpData = (PSRBEX_DATA_PNP)SrbGetSrbExDataByType((PSTORAGE_REQUEST_BLOCK)Srb, SrbExDataTypePnP);
+            PSCSI_PNP_REQUEST_BLOCK pnpData = (PSCSI_PNP_REQUEST_BLOCK)Srb;
 
             NT_ASSERT(pnpData != NULL);
 
@@ -1334,7 +1346,7 @@ AhciHwStartIo (
                 processIO = TRUE;
             } else if (sendStandby) {
                 //in dump mode, this is the last Srb sent after SYNC CACHE, spin down the disk
-                PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension((PSTORAGE_REQUEST_BLOCK)Srb);
+                PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
                 srbExtension->AtaFunction = ATA_FUNCTION_ATA_COMMAND;
                 SetCommandReg((&srbExtension->TaskFile.Current), IDE_COMMAND_STANDBY_IMMEDIATE);
                 processIO = TRUE;
@@ -1347,12 +1359,12 @@ AhciHwStartIo (
         }
 
         case SRB_FUNCTION_IO_CONTROL: {
-                PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension((PSTORAGE_REQUEST_BLOCK)Srb);
+                PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
 
-                IOCTLtoATA(adapterExtension->PortExtension[pathId], (PSTORAGE_REQUEST_BLOCK)Srb);
+                IOCTLtoATA(adapterExtension->PortExtension[pathId], Srb);
                 if (srbExtension->AtaFunction != 0) {
-                    if ( ( srbExtension->Sgl == NULL ) && ( IsDataTransferNeeded((PSTORAGE_REQUEST_BLOCK)Srb) )  ) {
-                        srbExtension->Sgl = (PLOCAL_SCATTER_GATHER_LIST)StorPortGetScatterGatherList(adapterExtension, Srb);
+                    if ( ( srbExtension->Sgl == NULL ) && ( IsDataTransferNeeded(Srb) )  ) {
+                        srbExtension->Sgl = (PLOCAL_SCATTER_GATHER_LIST)StorPortGetScatterGatherList(adapterExtension, (PSCSI_REQUEST_BLOCK)Srb);
                     }
                     processIO = TRUE;
                 } else {
@@ -1364,12 +1376,12 @@ AhciHwStartIo (
             }
 
         case SRB_FUNCTION_EXECUTE_SCSI: {
-                PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension((PSTORAGE_REQUEST_BLOCK)Srb);
+                PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
 
-                SCSItoATA(adapterExtension->PortExtension[pathId], (PSTORAGE_REQUEST_BLOCK)Srb);
+                SCSItoATA(adapterExtension->PortExtension[pathId], Srb);
                 if (srbExtension->AtaFunction != 0) {
-                    if ( ( srbExtension->Sgl == NULL ) && ( IsDataTransferNeeded((PSTORAGE_REQUEST_BLOCK)Srb) )  ) {
-                        srbExtension->Sgl = (PLOCAL_SCATTER_GATHER_LIST)StorPortGetScatterGatherList(adapterExtension, Srb);
+                    if ( ( srbExtension->Sgl == NULL ) && ( IsDataTransferNeeded(Srb) )  ) {
+                        srbExtension->Sgl = (PLOCAL_SCATTER_GATHER_LIST)StorPortGetScatterGatherList(adapterExtension, (PSCSI_REQUEST_BLOCK)Srb);
                     }
                     processIO = TRUE;
                 } else {
@@ -1383,7 +1395,7 @@ AhciHwStartIo (
         case SRB_FUNCTION_DUMP_POINTERS: {
             ULONG status = STOR_STATUS_SUCCESS;
             PAHCI_DUMP_CONTEXT dumpContext = NULL;
-            PMINIPORT_DUMP_POINTERS dumpPointers = (PMINIPORT_DUMP_POINTERS)SrbGetDataBuffer(Srb);
+            PMINIPORT_DUMP_POINTERS dumpPointers = (PMINIPORT_DUMP_POINTERS)Srb->DataBuffer;
 
             if ( (dumpPointers == NULL) ||
                  (SrbGetDataTransferLength(Srb) < RTL_SIZEOF_THROUGH_FIELD(MINIPORT_DUMP_POINTERS, MiniportPrivateDumpData)) ) {
@@ -1478,11 +1490,11 @@ AhciHwStartIo (
         // Storport already make sure that the Unit in active state before a SCSI command is sent to miniport.
         if ((function != SRB_FUNCTION_EXECUTE_SCSI) && (SrbGetSrbFlags(Srb) & SRB_FLAGS_D3_PROCESSING) == 0) {
             // for incoming request, port driver should make sure it's active.
-            PortAcquireActiveReference(adapterExtension->PortExtension[pathId], (PSTORAGE_REQUEST_BLOCK)Srb, NULL);
+            PortAcquireActiveReference(adapterExtension->PortExtension[pathId], Srb, NULL);
         }
 
         StorPortAcquireSpinLock(adapterExtension, InterruptLock, NULL, &lockhandle);
-        AddQueue(adapterExtension->PortExtension[pathId], &adapterExtension->PortExtension[pathId]->SrbQueue, (PSTORAGE_REQUEST_BLOCK)Srb, 0xDEADBEEF, 0x11);
+        AddQueue(adapterExtension->PortExtension[pathId], &adapterExtension->PortExtension[pathId]->SrbQueue, Srb, 0xDEADBEEF, 0x11);
         AhciGetNextIos(adapterExtension->PortExtension[pathId], TRUE);
         StorPortReleaseSpinLock(adapterExtension, &lockhandle);
     }
@@ -1492,8 +1504,8 @@ AhciHwStartIo (
 
 VOID
 AhciGetNextIos (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
     )
 /*
     get Srb from queue and program it to adapter.
@@ -1501,7 +1513,7 @@ AhciGetNextIos (
     assumption: internal request doesn't call this routine. Otherwise, the check of available slot should be changed.
 */
 {
-    PSTORAGE_REQUEST_BLOCK Srb;
+    PSCSI_REQUEST_BLOCK_EX Srb;
     BOOLEAN keepFilling;
     ULONG i, commandSlotMask, allocated;
 
@@ -1562,7 +1574,7 @@ AhciGetNextIos (
 
 BOOLEAN
 AhciHwInterrupt (
-    _In_ PVOID AdapterExtension
+    __in PVOID AdapterExtension
     )
 {
 /*++
@@ -1838,7 +1850,7 @@ Return Values:
         // the unit as it may have been surprise removed.
         asyncNotifyFlags = (RAID_ASYNC_NOTIFY_FLAG_MEDIA_STATUS | RAID_ASYNC_NOTIFY_FLAG_DEVICE_STATUS |
                             RAID_ASYNC_NOTIFY_FLAG_DEVICE_OPERATION);
-        
+#pragma warning (suppress: 28931)  // Suppress warning of un-used storStatus variable. It's used in Check build (in the NT_ASSERT)
         storStatus = StorPortAsyncNotificationDetected(AdapterExtension,
                                                        (PSTOR_ADDRESS)&channelExtension->DeviceExtension[0].DeviceAddress,
                                                        asyncNotifyFlags);
@@ -1929,8 +1941,8 @@ Return Values:
 
 VOID
 AhciHwTracingEnabled (
-    _In_ PVOID AdapterExtension,
-    _In_ BOOLEAN Enabled
+    __in PVOID AdapterExtension,
+    __in BOOLEAN Enabled
     )
 {
     PAHCI_ADAPTER_EXTENSION adapterExtension = (PAHCI_ADAPTER_EXTENSION)AdapterExtension;
@@ -1942,9 +1954,9 @@ AhciHwTracingEnabled (
 
 SCSI_UNIT_CONTROL_STATUS
 AhciHwUnitControl (
-    _In_ PVOID AdapterExtension,
-    _In_ SCSI_UNIT_CONTROL_TYPE ControlType,
-    _In_ PVOID Parameters
+    __in PVOID AdapterExtension,
+    __in SCSI_UNIT_CONTROL_TYPE ControlType,
+    __in PVOID Parameters
     )
 /*++
 
@@ -2141,7 +2153,7 @@ Return Value:
 
                     }
 
-                    channelExtension->PoFxFState = 0;
+                    channelExtension->PoFxState = 0;
 
                 } else {
                     //
@@ -2196,9 +2208,9 @@ Return Value:
 
                         // Starts processing the command. Only need to do the first command if it exists. all others will be done by processing completion routine.
                         if (channelExtension->Local.Srb.SrbExtension != NULL) {
-                            PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension((PSTORAGE_REQUEST_BLOCK)&channelExtension->Local.Srb);
+                            PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(&channelExtension->Local.Srb);
                             if (srbExtension->AtaFunction != 0) {
-                                AhciProcessIo(channelExtension, (PSTORAGE_REQUEST_BLOCK)&channelExtension->Local.Srb, FALSE);
+                                AhciProcessIo(channelExtension, &channelExtension->Local.Srb, FALSE);
                             }
                         }
                     }
@@ -2219,10 +2231,10 @@ Return Value:
             if ( IsPortValid(adapterExtension, storAddrBtl8->Path) && PortPoFxEnabled(channelExtension) ) {
 
                 StorPortDebugPrint(3, "StorAHCI - LPM: Port %02d - Transition from F%u to F%u\n", channelExtension->PortNumber,
-                                                                                                  channelExtension->PoFxFState,
+                                                                                                  channelExtension->PoFxState,
                                                                                                   fStateContext->FState);
 
-                channelExtension->PoFxFState = (UCHAR)fStateContext->FState;                
+                channelExtension->PoFxState = (UCHAR)fStateContext->FState;                
 
                 if (fStateContext->FState == 0) {
                 } else if (fStateContext->FState == 1) {

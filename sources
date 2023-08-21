@@ -1,0 +1,6 @@
+TARGETNAME = genahci
+TARGETTYPE = MINIPORT
+TARGETPATH = obj
+MSC_WARNING_LEVEL = /W4 /WX
+TARGETLIBS = $(DDK_LIB_PATH)\storport.lib $(DDK_LIB_PATH)\ntoskrnl.lib
+SOURCES = common.c entrypts.c hbastat.c io.c pnppower.c StorPortPatch.c util.c genahci.rc

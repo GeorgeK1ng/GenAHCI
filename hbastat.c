@@ -14,6 +14,9 @@ Notes:
 
 Revision History:
 
+        Nathan Obr (natobr),  February 2005 - September 2006 rev 1 (NCQ, LPM, Hotplug, persistant state) 
+                              December 2006 - August 2007    rev 2 (async)
+        Michael Xing (xiaoxing) December 2009
 --*/
 
 #if _MSC_VER >= 1200
@@ -29,8 +32,8 @@ Revision History:
 __inline
 VOID
 ForceGenxSpeed (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ ULONG GenNumber
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in ULONG GenNumber
     )
 {
     AHCI_SERIAL_ATA_CONTROL sctl;
@@ -63,7 +66,7 @@ ForceGenxSpeed (
 
 BOOLEAN
 AhciAdapterReset(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 /*
 This function brings the HBA and all ports to the H:Idle and P:Idle states by way of HBA Reset and P:Reset
@@ -407,7 +410,7 @@ Return value:
 
 VOID
 AhciAdapterRunAllPorts(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     ULONG i;
@@ -416,7 +419,8 @@ AhciAdapterRunAllPorts(
     for (i = 0; i <= AdapterExtension->HighestPort; i++) {
         if (AdapterExtension->PortExtension[i] != NULL) {
             AdapterExtension->InRunningPortsProcess = TRUE;
-            P_Running_StartAttempt(AdapterExtension->PortExtension[i], FALSE);
+            // set AtDIRQL to TRUE, otherwise StorPortAcquireSpinLock will bug check
+            P_Running_StartAttempt(AdapterExtension->PortExtension[i], TRUE);
             return;
         }
     }
@@ -426,8 +430,8 @@ AhciAdapterRunAllPorts(
 
 VOID
 RunNextPort(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
     )
 {
     PAHCI_ADAPTER_EXTENSION adapterExtension;
@@ -470,8 +474,8 @@ RunNextPort(
 
 VOID
 P_Running_StartAttempt(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
     )
 /*
 
@@ -486,7 +490,7 @@ Affected Variables/Registers:
     none
 */
 {
-    STOR_LOCK_HANDLE    lockhandle;
+    STOR_LOCK_HANDLE    lockhandle = {0};
     AhciZeroMemory((PCHAR)&lockhandle, sizeof(STOR_LOCK_HANDLE));
 
     if (!AtDIRQL) {
@@ -514,8 +518,8 @@ Affected Variables/Registers:
 
 VOID
 P_Running_Callback(
-    _In_ PVOID AdapterExtension,
-    _In_opt_ PVOID ChannelExtension
+    __in PVOID AdapterExtension,
+    __in_opt PVOID ChannelExtension
     )
 {
     PAHCI_CHANNEL_EXTENSION channelExtension = (PAHCI_CHANNEL_EXTENSION)ChannelExtension;
@@ -538,7 +542,7 @@ P_Running_Callback(
 
     // only clear the bit if this is the first timer callback in Port Start process
     if (callbackIndex == 1) {
-        STOR_LOCK_HANDLE    lockhandle;
+        STOR_LOCK_HANDLE    lockhandle = {0};
         AhciZeroMemory((PCHAR)&lockhandle, sizeof(STOR_LOCK_HANDLE));
 
         StorPortAcquireSpinLock(channelExtension->AdapterExtension, InterruptLock, NULL, &lockhandle);
@@ -561,8 +565,8 @@ P_Running_Callback(
 
 BOOLEAN
 P_Running(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     )
 /*
     The purpose of this function is to verify and drive the Start Channel state machine
@@ -676,7 +680,8 @@ Return Values:
             P_Running_WaitOnBSYDRQ(ChannelExtension, TimerCallbackProcess);
             break;
         default:
-            // Above cases cover all intermediate states. If a port start process has been completed, just exit.
+            // in case of "Stopped" state, another thread should be doing RESET process and then start the port.
+            NT_ASSERT(ChannelExtension->StartState.ChannelNextStartState == Stopped);
             break;
     }
 
@@ -687,10 +692,10 @@ Return Values:
 
 VOID
 P_Running_WaitOnDET(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     )
-/*
+/*   
     Search for Device Activity phase.  Use DET and IPM for any signs of life as defined in AHCI 1.2 section 10.1.2 and 10.3.1.
     Polled 3 times in 30ms
 
@@ -806,8 +811,8 @@ WaitOnDET_Start:
 
 VOID
 P_Running_WaitWhileDET1(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     )
 /*
     Waiting on establishment of link level communications phase.
@@ -895,8 +900,8 @@ WaitWhileDET1_Start:
 
 VOID
 P_Running_WaitOnDET3(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     )
 /*
     Done monkeying phase.
@@ -965,8 +970,8 @@ WaitOnDET3_Start:
 
 VOID
 P_Running_WaitOnFRE(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     )
 /*
     Start the Receive buffer phase
@@ -1050,8 +1055,8 @@ WaitOnFRE_Start:
 
 VOID
 P_Running_WaitOnBSYDRQ(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     )
 /*
     Home stretch
@@ -1096,7 +1101,7 @@ WaitOnBSYDRQ_Start:
     }
   //3.1 Set ST to 1
     if ( ( tfd.STS.BSY == 0) && ( tfd.STS.DRQ == 0) ) {
-        STOR_LOCK_HANDLE    lockhandle;
+        STOR_LOCK_HANDLE    lockhandle = {0};
         BOOLEAN             needSpinLock;
 
         if ( TimerCallbackProcess && (ChannelExtension->StartState.DirectStartInProcess == 1) ) {
@@ -1206,8 +1211,8 @@ WaitOnBSYDRQ_Start:
 
 VOID
 P_Running_StartFailed(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     )
 /*
 
@@ -1232,7 +1237,7 @@ Affected Variables/Registers:
     none
 */
 {
-    STOR_LOCK_HANDLE    lockhandle;
+    STOR_LOCK_HANDLE    lockhandle = {0};
     BOOLEAN             needSpinLock;
 
     if ( TimerCallbackProcess && (ChannelExtension->StartState.DirectStartInProcess == 1) ) {
@@ -1354,7 +1359,7 @@ Affected Variables/Registers:
 
     AHCI_COMMAND        cmd;
     AHCI_TASK_FILE_DATA tfd;
-    PSCSI_REQUEST_BLOCK senseSrb;
+    PSCSI_REQUEST_BLOCK_EX senseSrb;
     PAHCI_SRB_EXTENSION srbExtension;
 
   //1.1 Initialize variables
@@ -1479,7 +1484,7 @@ Affected Variables/Registers:
     //3.1 If a request sense SRB was created due to this error
     if (senseSrb != NULL) {
         ChannelExtension->StateFlags.QueuePaused = FALSE;
-        AhciProcessIo(ChannelExtension, (PSTORAGE_REQUEST_BLOCK)senseSrb, TRUE);  //program Sense Srb into Slot
+        AhciProcessIo(ChannelExtension, senseSrb, TRUE);  //program Sense Srb into Slot
     }
 
     //3.2 If a COMRESET was issued, restore Preserved Settings
@@ -1495,7 +1500,7 @@ Affected Variables/Registers:
 
 VOID
 AhciPortErrorRecovery(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
   )
 /*
     Error recovery routine for Port
@@ -1547,8 +1552,8 @@ Return Values:
 
 BOOLEAN
 AhciPortReset (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN CompleteAllRequests
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN CompleteAllRequests
     )
 /*++
 AhciPortReset can be called even if the miniport driver is not ready for another request.

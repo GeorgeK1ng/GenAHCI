@@ -15,6 +15,8 @@ Notes:
 
 Revision History:
 
+        Michael Xing (xiaoxing),  December 2009 - initial Storport miniport version
+
 --*/
 
 #if _MSC_VER >= 1200
@@ -56,21 +58,21 @@ typedef struct _MODE_PARAMETER_HEADER_WRAPPER {
 
 VOID
 ULong2HexString (
-    _In_ ULONG  Number,
-    _Inout_updates_bytes_ (Length) PUCHAR StringBuffer,
-    _In_ ULONG Length
+    __in ULONG  Number,
+    __inout_bcount (Length) PUCHAR StringBuffer,
+    __in ULONG Length
     );
 
 VOID
 BuildHybridEvictCommand(
-    _Inout_ PAHCI_H2D_REGISTER_FIS CFIS,
-    _In_ USHORT                 BlockCount
+    __inout PAHCI_H2D_REGISTER_FIS CFIS,
+    __in USHORT                 BlockCount
     );
 
 ULONG
 SCSItoATA(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 /*
     Note: If there is a need to send a command to device,
@@ -106,9 +108,9 @@ SCSItoATA(
 
 ULONG
 SrbConvertToATAPICommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 /*
     Note: If there is a need to send a command to device,
@@ -169,9 +171,9 @@ SrbConvertToATAPICommand(
 
 ULONG
 AtapiCommonRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 /*++
 
@@ -203,8 +205,8 @@ Routine Description:
 
 VOID
 AtapiInquiryCompletion (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     STOR_UNIT_ATTRIBUTES attributes = {0};
@@ -239,8 +241,8 @@ AtapiInquiryCompletion (
 
 ULONG
 AtapiInquiryRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 /*++
 
@@ -261,8 +263,8 @@ Routine Description:
 
 VOID
 AtapiModeCommandRequestCompletion (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 /*++
 
@@ -355,9 +357,9 @@ Return value:
 
 ULONG
 AtapiModeSenseRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 /*++
 --*/
@@ -473,9 +475,9 @@ Done:
 
 ULONG
 AtapiModeSelectRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 /*++
     return value: STOR_STATUS
@@ -622,10 +624,10 @@ Done:
 
 ULONG
 SrbConvertToATACommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb,
-    _In_ ULONG                   CdbLength
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb,
+    __in ULONG                   CdbLength
     )
 /*
     Srb to a ATA device must be translated to an ATA command
@@ -645,7 +647,7 @@ SrbConvertToATACommand(
     case SCSIOP_READ16:
     case SCSIOP_WRITE16:
 
-        status = AtaReadWriteRequest(ChannelExtension, Srb, Cdb, CdbLength);
+        status = AtaReadWriteRequest(ChannelExtension, Srb, Cdb);
         break;
 
     case SCSIOP_VERIFY:
@@ -731,10 +733,10 @@ SrbConvertToATACommand(
 
 VOID
 AtaSetTaskFileDataRange(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ ULONG64 StartingLba,
-    _In_ ULONG NumberOfBlocks
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in ULONG64 StartingLba,
+    __in ULONG NumberOfBlocks
     )
 /*++
 
@@ -814,8 +816,8 @@ Return Value:
 
 VOID
 HybridWriteThroughEvictCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
 )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -830,8 +832,8 @@ HybridWriteThroughEvictCompletion(
 
 VOID
 HybridWriteThroughCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
 )
 /*++
 
@@ -920,9 +922,9 @@ Return Value:
 __inline
 UCHAR
 GetReadWriteRequestAtaCommand (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb,
+    __in PCDB                    Cdb
     )
 /*++
 
@@ -983,10 +985,10 @@ Return Value:
 
 VOID
 BuildReadWriteCommand (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb,
-    _In_ ULONG                   CdbLength
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb,
+    __in PCDB                    Cdb,
+    __in ULONG                   CdbLength
     )
 /*++
 
@@ -1107,7 +1109,7 @@ Notes:
     if ((!IsDumpMode(ChannelExtension->AdapterExtension) && IsDeviceHybridInfoEnabled(ChannelExtension) && IsNcqReadWriteCommand(srbExtension)) ||
         ((ChannelExtension->StateFlags.HybridInfoEnabledOnHiberFile == 1) && IsNCQWriteCommand(srbExtension))) {
 
-        PSRBEX_DATA_IO_INFO srbExInfo = (PSRBEX_DATA_IO_INFO)SrbGetSrbExDataByType(Srb, SrbExDataTypeIoInfo);
+        PSRBEX_DATA_IO_INFO_EX srbExInfo = (PSRBEX_DATA_IO_INFO_EX)SrbGetSrbExDataByType((PSTORAGE_REQUEST_BLOCK)Srb, SrbExDataTypeIoInfo);
 
         if ((srbExInfo != NULL) &&
             ((srbExInfo->Flags & REQUEST_INFO_VALID_CACHEPRIORITY_FLAG) != 0) &&
@@ -1139,12 +1141,167 @@ Notes:
     return;
 }
 
+
+VOID
+AtaSetWriteCommand (
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
+    )
+/*++
+
+Routine Description:
+
+    Sets the ATA write command in the TaskFile. The routine shall not modify
+    any other field in the srb or device extension.
+
+Arguments:
+
+    ChannelExtension
+    Srb
+
+Return Value:
+
+    The ATA command that was set in the SRB.
+
+--*/
+{
+    UCHAR commandReg = IDE_COMMAND_NOT_VALID;
+
+    PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
+
+    // for SATA devices, use Write DMA command.
+    if( ChannelExtension->StateFlags.NCQ_Activated ) {
+        // change the command to be NCQ command
+        commandReg = IDE_COMMAND_WRITE_FPDMA_QUEUED;
+    } else {
+    // Make all writes into WRITE_DMA
+        // If FUA, keep track of FUA even there is nothing to do with this bit later
+        if (Is48BitCommand(srbExtension->Flags)) {
+            if ( (((PCDB)Srb->Cdb)->CDB10.ForceUnitAccess) &&
+                    IsFuaSupported(ChannelExtension) ) {
+                // DMA write ext FUA (48 bit)
+                commandReg = IDE_COMMAND_WRITE_DMA_FUA_EXT;
+            } else {
+                // DMA write ext (48 bit)
+                commandReg = IDE_COMMAND_WRITE_DMA_EXT;
+            }
+        } else {
+            // DMA write
+            commandReg = IDE_COMMAND_WRITE_DMA;
+        }
+    }
+
+    SetCommandReg((&srbExtension->TaskFile.Current), commandReg);
+
+    return;
+}
+
+VOID
+AtaSetReadCommand (
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
+    )
+/*++
+
+Routine Description:
+
+
+Arguments:
+
+    Srb
+
+Return Value:
+
+    The ATA command that was set in the SRB extension.
+
+--*/
+{
+    PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
+
+    UCHAR commandReg = IDE_COMMAND_NOT_VALID;
+
+    UNREFERENCED_PARAMETER(ChannelExtension);
+
+    if( ChannelExtension->StateFlags.NCQ_Activated ) {
+        // change the command to be NCQ command
+        commandReg = IDE_COMMAND_READ_FPDMA_QUEUED;
+    } else {
+        // SATA device, use DMA read command.
+        if (Is48BitCommand(srbExtension->Flags)) {
+            commandReg = IDE_COMMAND_READ_DMA_EXT;
+        } else {
+            commandReg = IDE_COMMAND_READ_DMA;
+        }
+    }
+
+    SetCommandReg((&srbExtension->TaskFile.Current), commandReg);
+
+    return;
+}
+
+VOID
+AtaConstructReadWriteTaskFile (
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
+    )
+/*++
+
+Routine Description:
+
+    Sets up the task file registers for read/write. The routine shall not
+    modify any other field in the srb or device extension.
+
+Arguments:
+
+    ChannelExtension
+    Srb
+
+Return Value:
+
+    None.
+
+Notes:
+
+    All the other fields in the srb should be set before calling this routine.
+
+--*/
+{
+    LARGE_INTEGER   startingSector;
+    ULONG           bytesPerSector;
+    ULONG           sectorCount;
+
+    PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
+
+    bytesPerSector = BytesPerLogicalSector(&ChannelExtension->DeviceExtension->DeviceParameters);
+
+    // Set up sector count register. Round up to next block.
+    sectorCount = (Srb->DataTransferLength + bytesPerSector - 1) / bytesPerSector;
+
+    // Get starting sector number from CDB.
+    startingSector.QuadPart = GetLbaFromCdb((PCDB)Srb->Cdb, Srb->CdbLength);
+
+    AtaSetTaskFileDataRange(ChannelExtension,
+                            Srb,
+                            startingSector.QuadPart,
+                            sectorCount
+                            );
+
+    if (srbExtension->AtaFunction == ATA_FUNCTION_ATA_READ) {
+        AtaSetReadCommand(ChannelExtension, Srb);
+    } else {
+        AtaSetWriteCommand(ChannelExtension, Srb);
+    }
+
+    return;
+}
+
+
 ULONG
 AtaReadWriteRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb,
-    _In_ ULONG                   CdbLength
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb//,
+    //__in ULONG                   CdbLength
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -1177,8 +1334,10 @@ AtaReadWriteRequest (
     }
 
     if (IsSupportedReadCdb(Cdb)) {
+        srbExtension->AtaFunction = ATA_FUNCTION_ATA_READ;
         srbExtension->Flags |= ATA_FLAGS_DATA_IN;
     } else if (IsSupportedWriteCdb(Cdb)) {
+        srbExtension->AtaFunction = ATA_FUNCTION_ATA_WRITE;
         srbExtension->Flags |= ATA_FLAGS_DATA_OUT;
     } else {
         //
@@ -1188,17 +1347,17 @@ AtaReadWriteRequest (
         return STOR_STATUS_INVALID_PARAMETER;
     }
 
-    BuildReadWriteCommand(ChannelExtension, Srb, Cdb, CdbLength);
+    AtaConstructReadWriteTaskFile(ChannelExtension, Srb);
 
     return STOR_STATUS_SUCCESS;
 }
 
 ULONG
 AtaVerifyRequest(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb,
-    _In_ ULONG                   CdbLength
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb,
+    __in ULONG                   CdbLength
     )
 /*++
 
@@ -1273,8 +1432,8 @@ Return Value:
 
 VOID
 AtaModeSenseRequestCompletionMediaStatus (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PAHCI_SRB_EXTENSION    srbExtension = GetSrbExtension(Srb);
@@ -1304,8 +1463,8 @@ AtaModeSenseRequestCompletionMediaStatus (
 
 VOID
 AtaModeSenseRequestCompletionWriteCache (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PMODE_CACHING_PAGE      cachePage;
@@ -1371,10 +1530,10 @@ AtaModeSenseRequestCompletionWriteCache (
 
 ULONG
 AtaInitModePageHeaderWrapper (
-    _In_ PCDB                                   Cdb,
-    _In_reads_bytes_(DataBufferLength) PVOID    ModePageHeader,
-    _In_ ULONG                                  DataBufferLength,
-    _Out_ PMODE_PARAMETER_HEADER_WRAPPER        ModePageHeaderWrapper
+    __in PCDB                                   Cdb,
+    __in_bcount(DataBufferLength) PVOID    ModePageHeader,
+    __in ULONG                                  DataBufferLength,
+    __out PMODE_PARAMETER_HEADER_WRAPPER        ModePageHeaderWrapper
 )
 /*++
 
@@ -1448,9 +1607,9 @@ Return Value:
 
 ULONG
 AtaModeSenseRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 /*
   NOTE: only Cache Page is supported by storahci driver
@@ -1553,9 +1712,9 @@ AtaModeSenseRequest (
 
 ULONG
 AtaModeSelectRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 /*
     NOTE: this is used to enable/disable device write cache.
@@ -1635,9 +1794,9 @@ AtaModeSelectRequest (
 
 VOID
 SelectDeviceGeometry(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PATA_DEVICE_PARAMETERS DeviceParameters,
-    _In_ PIDENTIFY_DEVICE_DATA  IdentifyDeviceData
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PATA_DEVICE_PARAMETERS DeviceParameters,
+    __in PIDENTIFY_DEVICE_DATA  IdentifyDeviceData
     )
 {
     LARGE_INTEGER   maxLba;
@@ -1690,8 +1849,8 @@ SelectDeviceGeometry(
 
 ULONG
 AtaReadCapacityCompletion (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     ULONG   status;
@@ -1782,8 +1941,8 @@ AtaReadCapacityCompletion (
 
 VOID
 AtaReadCapacityRequestCompletion (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     ULONG               status = STOR_STATUS_SUCCESS;
@@ -1854,10 +2013,10 @@ AtaReadCapacityRequestCompletion (
 
 ULONG
 AtaReadCapacityRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb,
-    _In_ ULONG                   CdbLength
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb,
+    __in ULONG                   CdbLength
     )
 {
     ULONG               status = STOR_STATUS_SUCCESS;
@@ -1913,8 +2072,8 @@ AtaReadCapacityRequest (
 
 VOID
 AtaGenerateInquiryData (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_reads_bytes_(ATA_INQUIRYDATA_SIZE) PINQUIRYDATA InquiryData
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in_bcount(ATA_INQUIRYDATA_SIZE) PINQUIRYDATA InquiryData
     )
 {
     USHORT descriptor = VER_DESCRIPTOR_1667_NOVERSION;
@@ -1976,8 +2135,8 @@ AtaGenerateInquiryData (
 
 VOID
 IssueIdentifyCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 /*++
     This could be a macro.  broken out here to make the logic easier to read
@@ -2035,8 +2194,8 @@ Affected Variables/Registers:
 
 ULONG
 InquiryComplete(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 /*++
     This is the completion point of INQUIRY command for ATA devices.
@@ -2124,9 +2283,9 @@ Return Value:
 
 ULONG
 AtaInquiryRequest(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 /*
   NOTE: the command should be completed after calling this function as no real command will be sent to device.
@@ -2389,8 +2548,8 @@ AtaInquiryRequest(
 
 ULONG
 AtaReportLunsCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PVOID Context
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PVOID Context
     )
 /*
 Assumption: there will be no REPORT LUNS command received when the previous REPORT LUNS command is still in process.
@@ -2400,7 +2559,7 @@ Assumption: there will be no REPORT LUNS command received when the previous REPO
 */
 {
     ULONG status = STOR_STATUS_SUCCESS;
-    PSTORAGE_REQUEST_BLOCK srb = (PSTORAGE_REQUEST_BLOCK)Context;
+    PSCSI_REQUEST_BLOCK_EX srb = (PSCSI_REQUEST_BLOCK_EX)Context;
 
     // Filter out all TIDs but 0 since this is an AHCI interface without Port Multiplier which can only support one device.
     if (SrbGetLun(srb) != 0) {
@@ -2417,9 +2576,9 @@ Assumption: there will be no REPORT LUNS command received when the previous REPO
 
 ULONG
 AtaStartStopUnitRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -2446,8 +2605,8 @@ AtaStartStopUnitRequest (
 
 ULONG
 AtaTestUnitReadyRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -2466,9 +2625,9 @@ AtaTestUnitReadyRequest (
 
 ULONG
 AtaMediumRemovalRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -2491,8 +2650,8 @@ AtaMediumRemovalRequest (
 
 VOID
 AtaAlwaysSuccessRequestCompletion (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     UNREFERENCED_PARAMETER(ChannelExtension);
@@ -2506,8 +2665,8 @@ AtaAlwaysSuccessRequestCompletion (
 
 ULONG
 AtaFlushCommandRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -2539,8 +2698,8 @@ AtaFlushCommandRequest (
 
 VOID
 AtaPassThroughRequestCompletion (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     if (SRB_STATUS(Srb->SrbStatus) == SRB_STATUS_BUS_RESET) {
@@ -2595,9 +2754,9 @@ AtaPassThroughRequestCompletion (
 
 ULONG
 AtaPassThroughRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -2607,7 +2766,7 @@ AtaPassThroughRequest (
 
     // if it's a 48bit command but device doesn't support it, assert.
     // command issuer needs to make sure this doesn't happen. The command will be sent to device and let device fail it, so that there is ATA status and error returned to issuer.
-    NT_ASSERT( Support48Bit(&ChannelExtension->DeviceExtension->DeviceParameters) || (Cdb->ATA_PASSTHROUGH16.Extend == 0) );
+    NT_ASSERT( Support48Bit(&ChannelExtension->DeviceExtension->DeviceParameters) || (cdb->ATA_PASSTHROUGH16.Extend == 0) );
 
     srbExtension->AtaFunction = ATA_FUNCTION_ATA_COMMAND;
 
@@ -2651,9 +2810,9 @@ AtaPassThroughRequest (
 
 ULONG
 ConvertUnmapBlockDescrToAtaLbaRanges(
-    _Inout_ PUNMAP_BLOCK_DESCRIPTOR BlockDescr,
-    _In_reads_bytes_(BufferSize) PCHAR DestBuffer,
-    _In_ ULONG  BufferSize
+    __inout PUNMAP_BLOCK_DESCRIPTOR BlockDescr,
+    __in_bcount(BufferSize) PCHAR DestBuffer,
+    __in ULONG  BufferSize
     )
 /*++
 
@@ -2728,8 +2887,8 @@ SCSI:         0000_0000 0800_0000 0B00_0000_0000_0000
 ULONG
 __inline
 GetDataBufferLengthForDsmCommand (
-    _In_ ULONG MaxLbaRangeEntryCountPerCmd,
-    _In_ ULONG NeededLbaRangeEntryCount
+    __in ULONG MaxLbaRangeEntryCountPerCmd,
+    __in ULONG NeededLbaRangeEntryCount
 )
 /*
     Input:
@@ -2762,8 +2921,8 @@ GetDataBufferLengthForDsmCommand (
 
 VOID
 DeviceProcessTrimRequest(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
 )
 /*++
 
@@ -2882,8 +3041,8 @@ Return Value:
 
 ULONG
 AtaUnmapRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     ULONG               status = STOR_STATUS_SUCCESS;
@@ -3007,13 +3166,13 @@ Exit:
 
 ULONG
 AtaSecurityProtocolRequest (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ PCDB                    Cdb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in PCDB                    Cdb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
-    PCDB                securityCdb = Cdb;
+    PCDB                securityCdb = (PCDB)Srb->Cdb;
     ULONG               dataLength = 0;
     UCHAR               commandReg;
     UCHAR               nonDataTrustedReceive = 0;
@@ -3076,9 +3235,9 @@ AtaSecurityProtocolRequest (
 
 UCHAR
 AtaMapError(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN FUAcommand
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN FUAcommand
     )
 /*++
 
@@ -3316,10 +3475,10 @@ Return Value:
 
 VOID
 CopyField(
-    _Out_writes_bytes_(Count+1) PUCHAR Destination,
-    _In_reads_bytes_(Count) PUCHAR Source,
-    _In_ ULONG Count,
-    _In_ UCHAR Change
+    __out_bcount(Count+1) PUCHAR Destination,
+    __in_bcount(Count) PUCHAR Source,
+    __in ULONG Count,
+    __in UCHAR Change
     )
 
 /*++
@@ -3359,7 +3518,9 @@ Notes:
                 Destination[i] = Change;
             } else if ((Source[i] <= ' ') ||
                        (Source[i] > 0x7f) ||
-                       (Source[i] == ',')) {
+                       (Source[i] == ',') ||
+                       // fix for Crucial SSDs to separate the vendor ID from the product ID and correct the INQUIRY response
+                       (Source[i] == '_')) {
                 Destination[i] = Change;
             } else {
                 Destination[i] = Source[i];
@@ -3376,9 +3537,9 @@ Notes:
 
 VOID
 FormatAtaId (
-    _Out_writes_bytes_(CharCount + 1) PUCHAR Destination,
-    _In_reads_bytes_(CharCount)  PUCHAR Source,
-    _In_ ULONG CharCount
+    __out_bcount(CharCount + 1) PUCHAR Destination,
+    __in_bcount(CharCount)  PUCHAR Source,
+    __in ULONG CharCount
     )
 /*++
 
@@ -3395,7 +3556,8 @@ FormatAtaId (
     ByteSwap(Destination, CharCount);
 
     // This will null terminate the string
-    RemoveTrailingBlanks(Destination, CharCount + 1);
+    // if we remove the trailing blanks for Crucial SSDs the INQUIRY response will have a terminating null inside the product ID
+    // RemoveTrailingBlanks(Destination, CharCount + 1);
 
     return;
 }
@@ -3403,8 +3565,8 @@ FormatAtaId (
 
 VOID
 DeviceInitAtaIds(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PIDENTIFY_DEVICE_DATA IdentifyDeviceData
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PIDENTIFY_DEVICE_DATA IdentifyDeviceData
     )
 {
     FormatAtaId(ChannelExtension->DeviceExtension->DeviceParameters.VendorId,
@@ -3426,9 +3588,9 @@ DeviceInitAtaIds(
 
 VOID
 FormatAtapiVendorId(
-    _In_ PINQUIRYDATA InquiryData,
-    _Out_writes_bytes_(Length) PUCHAR VendorId,
-    _In_ ULONG Length
+    __in PINQUIRYDATA InquiryData,
+    __out_bcount(Length) PUCHAR VendorId,
+    __in ULONG Length
     )
 /*++
 
@@ -3498,9 +3660,9 @@ Return Value:
 
 VOID
 FormatAtapiRevisionId(
-    _In_ PINQUIRYDATA InquiryData,
-    _Out_writes_bytes_(Length) PUCHAR RevisionId,
-    _In_ ULONG Length
+    __in PINQUIRYDATA InquiryData,
+    __out_bcount(Length) PUCHAR RevisionId,
+    __in ULONG Length
     )
 /*++
 
@@ -3541,8 +3703,8 @@ Return Value:
 
 VOID
 DeviceInitAtapiIds(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PINQUIRYDATA InquiryData
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PINQUIRYDATA InquiryData
     )
 {
     FormatAtapiVendorId(InquiryData,
@@ -3559,7 +3721,7 @@ DeviceInitAtapiIds(
 
 VOID
 UpdateDeviceParameters(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 /*++
 
@@ -3667,8 +3829,8 @@ Return Value:
 
 ULONG
 IOCTLtoATA(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 /*
     Note: If there is a need to send a command to device,
@@ -3768,8 +3930,8 @@ IOCTLtoATA(
 
 ULONG
 SmartVersion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PGETVERSIONINPARAMS versionParameters;
@@ -3822,10 +3984,10 @@ SmartVersion(
 
 BOOLEAN
 FillClippedSGL(
-    _In_    PSTOR_SCATTER_GATHER_LIST SourceSgl,
-    _Inout_ PSTOR_SCATTER_GATHER_LIST LocalSgl,
-    _In_    ULONG BytesLeft,
-    _In_    ULONG BytesNeeded
+    __in    PSTOR_SCATTER_GATHER_LIST SourceSgl,
+    __inout PSTOR_SCATTER_GATHER_LIST LocalSgl,
+    __in    ULONG BytesLeft,
+    __in    ULONG BytesNeeded
     )
 /*
     This routine cuts the beginning 'BytesLeft' from 'SourceSgl' and copy the left ranges to 'LocalSgl'.
@@ -3899,8 +4061,8 @@ FillClippedSGL(
 
 ULONG
 SmartIdentifyData(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PSENDCMDOUTPARAMS   outParams;
@@ -3958,8 +4120,8 @@ SmartIdentifyData(
 
 ULONG
 SmartGeneric(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PSENDCMDOUTPARAMS           outParams;
@@ -4085,8 +4247,8 @@ SmartGeneric(
 
 ULONG
 NVCacheGeneric(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PSRB_IO_CONTROL             srbControl;
@@ -4249,8 +4411,8 @@ NVCacheGeneric(
 
 VOID
 HybridInfoCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 {
     PSRB_IO_CONTROL                     srbControl;
@@ -4372,8 +4534,8 @@ HybridInfoCompletion(
 
 ULONG
 HybridGetInfo(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 /*++
 Routine Description:
@@ -4474,8 +4636,8 @@ Return Value:
 
 VOID
 HybridControlCachingMediumCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension;
@@ -4519,7 +4681,7 @@ HybridControlCachingMediumCompletion(
 __inline
 VOID
 BuildHybridControlDisableCacheCommand(
-    _Inout_ PAHCI_H2D_REGISTER_FIS CFIS
+    __inout PAHCI_H2D_REGISTER_FIS CFIS
     )
 /*++
 Routine Description:
@@ -4545,8 +4707,8 @@ Return Value:
 
 ULONG
 HybridDisableCachingMedium(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 /*++
 Routine Description:
@@ -4640,7 +4802,7 @@ Return Value:
 __inline
 VOID
 BuildEnableFeatureHybridInfoCommand(
-    _Inout_ PAHCI_H2D_REGISTER_FIS CFIS
+    __inout PAHCI_H2D_REGISTER_FIS CFIS
     )
 /*++
 Routine Description:
@@ -4664,8 +4826,8 @@ Return Value:
 
 ULONG
 HybridEnableCachingMedium(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 /*++
 Routine Description:
@@ -4736,9 +4898,9 @@ Return Value:
 __inline
 VOID
 BuildHybridControlSetThresholdCommand(
-    _Inout_ PAHCI_H2D_REGISTER_FIS CFIS,
-    _In_ UCHAR                  DirtyLowThreshold,
-    _In_ UCHAR                  DirtyHighThreshold
+    __inout PAHCI_H2D_REGISTER_FIS CFIS,
+    __in UCHAR                  DirtyLowThreshold,
+    __in UCHAR                  DirtyHighThreshold
     )
 /*++
 Routine Description:
@@ -4765,8 +4927,8 @@ Return Value:
 
 ULONG
 HybridSetDirtyThreshold(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 /*++
 Routine Description:
@@ -4862,10 +5024,10 @@ Return Value:
 __inline
 VOID
 BuildHybridDemoteBySizeCommand(
-    _Inout_ PAHCI_H2D_REGISTER_FIS CFIS,
-    _In_ UCHAR                  SourcePriority,
-    _In_ UCHAR                  TargetPriority,
-    _In_ ULONG                  LbaCount
+    __inout PAHCI_H2D_REGISTER_FIS CFIS,
+    __in UCHAR                  SourcePriority,
+    __in UCHAR                  TargetPriority,
+    __in ULONG                  LbaCount
     )
 /*++
 Routine Description:
@@ -4902,8 +5064,8 @@ Return Value:
 
 ULONG
 HybridDemoteBySize(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 /*++
 Routine Description:
@@ -5002,10 +5164,105 @@ Return Value:
 }
 
 
+/* Old One
 ULONG
 HybridIoctlProcess(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
+    )
+{
+    PAHCI_SRB_EXTENSION     srbExtension;
+    PSRB_IO_CONTROL         srbControl;
+    PNVCACHE_REQUEST_BLOCK  nvCacheRequest;
+    PNVCACHE_HINT_PAYLOAD   nvCacheHintPayload;
+
+    UCHAR   command;
+    UCHAR   subCommand;
+    BOOLEAN commandSupported = FALSE;
+
+    srbExtension = GetSrbExtension(Srb);
+    srbControl = (PSRB_IO_CONTROL) Srb->DataBuffer;
+    nvCacheRequest = (PNVCACHE_REQUEST_BLOCK)(srbControl + 1);
+    nvCacheHintPayload = (PNVCACHE_HINT_PAYLOAD)(nvCacheRequest + 1);
+
+    // 1.1 it has been validated in caller, data fields in nvCacheRequest are safe to access
+    if (Srb->DataTransferLength < (sizeof(SRB_IO_CONTROL) + sizeof(NVCACHE_REQUEST_BLOCK) + sizeof(NVCACHE_HINT_PAYLOAD) + nvCacheRequest->Count * ATA_BLOCK_SIZE)) {
+        if ( Srb->DataTransferLength >= (sizeof(SRB_IO_CONTROL) + RTL_SIZEOF_THROUGH_FIELD(NVCACHE_REQUEST_BLOCK, NRBStatus)) ) {
+            nvCacheRequest->NRBStatus = NRB_INPUT_DATA_UNDERRUN;
+        }
+        // the associated buffer size is not big enough, use SRB_STATUS_BAD_SRB_BLOCK_LENGTH as SrbStatus.
+        Srb->SrbStatus = SRB_STATUS_BAD_SRB_BLOCK_LENGTH;
+        return STOR_STATUS_BUFFER_TOO_SMALL;
+    }
+
+    // limit the data buffer associated with NvCache request max to 8 blocks.
+    if (nvCacheRequest->DataBufSize > (sizeof(NVCACHE_HINT_PAYLOAD) + 8 * ATA_BLOCK_SIZE)) {
+        nvCacheRequest->NRBStatus = NRB_INVALID_PARAMETER;
+        // the associated buffer size is too big, use SRB_STATUS_BAD_FUNCTION as SrbStatus.
+        Srb->SrbStatus = SRB_STATUS_BAD_FUNCTION;
+        return STOR_STATUS_INVALID_PARAMETER;
+    }
+
+    command = nvCacheHintPayload->Command;
+
+    if (command == IDE_COMMAND_NCQ_NON_DATA) {
+        subCommand = (nvCacheHintPayload->Feature7_0 & 0x0F);      // subCommand is the lower 4 bits in Feature7_0 field.
+        commandSupported = ( (subCommand == IDE_NCQ_NON_DATA_HYBRID_CHANGE_BY_SIZE) ||
+                             (subCommand == IDE_NCQ_NON_DATA_HYBRID_CHANGE_BY_LBA_RANGE) ||
+                             (subCommand == IDE_NCQ_NON_DATA_HYBRID_CONTROL) );
+    } else if (command == IDE_COMMAND_SEND_FPDMA_QUEUED) {
+        subCommand = (nvCacheHintPayload->Count15_8 & 0x1F);       // subCommand is the lower 5 bits in Count15_8 field.
+        commandSupported = (subCommand == IDE_NCQ_SEND_HYBRID_EVICT);
+    }
+
+    // 1.2 if command not supported or Hybrid Information is not enabled, reject the request.
+    if ((commandSupported == FALSE) || !IsDeviceHybridInfoEnabled(ChannelExtension) ) {
+        nvCacheRequest->NRBStatus = NRB_ILLEGAL_REQUEST;
+        Srb->SrbStatus = SRB_STATUS_BAD_FUNCTION;
+        return STOR_STATUS_INVALID_PARAMETER;
+    }
+
+    // 2.1 copy command fields into SrbExtension prior to calling IsNCQCommand()
+    StorPortCopyMemory(&srbExtension->Cfis, nvCacheHintPayload, sizeof(NVCACHE_HINT_PAYLOAD));
+
+    // 2.2 reject the reject if NCQ command not supported or device doesn't work in NCQ mode
+    if ( IsNCQCommand(srbExtension) &&
+         (!IsNCQSupported(ChannelExtension) || (ChannelExtension->StateFlags.NCQ_Activated == 0)) ) {
+        nvCacheRequest->NRBStatus = NRB_INVALID_PARAMETER;
+        Srb->SrbStatus = SRB_STATUS_BAD_FUNCTION;
+        return STOR_STATUS_INVALID_PARAMETER;
+    }
+
+    // 3 prepare SGL if needed
+    if (nvCacheRequest->Count > 0) {
+        // get SGL for the real data buffer that caller wants to transfer to device.
+        // controlling data structures: SRB_IO_CONTROL, NVCACHE_REQUEST_BLOCK and NVCACHE_HINT_PAYLOAD should be skipped.
+        if (!FillClippedSGL(StorPortGetScatterGatherList(ChannelExtension->AdapterExtension, (PSCSI_REQUEST_BLOCK)Srb),
+                            (PSTOR_SCATTER_GATHER_LIST) &srbExtension->LocalSgl,
+                            sizeof(SRB_IO_CONTROL) + sizeof(NVCACHE_REQUEST_BLOCK) + sizeof(NVCACHE_HINT_PAYLOAD),   Srb->DataTransferLength  ) ) {
+
+            nvCacheRequest->NRBStatus = NRB_INVALID_PARAMETER;
+            Srb->SrbStatus = SRB_STATUS_BAD_SRB_BLOCK_LENGTH;
+            return STOR_STATUS_INVALID_PARAMETER;
+        } else {
+            srbExtension->Flags |= ATA_FLAGS_DATA_OUT;
+            srbExtension->Sgl = &srbExtension->LocalSgl;
+            srbExtension->DataTransferLength = nvCacheRequest->Count * ATA_BLOCK_SIZE;
+        }
+    }
+
+    srbExtension->AtaFunction = ATA_FUNCTION_ATA_HINT_PAYLOAD;
+    srbExtension->CompletionRoutine = AhciPortNVCacheCompletion;
+
+    Srb->SrbStatus = SRB_STATUS_SUCCESS;
+    return STOR_STATUS_SUCCESS;
+}
+*/
+
+ULONG
+HybridIoctlProcess(
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 /*++
 Routine Description:
@@ -5081,10 +5338,10 @@ Return Value:
 
 ULONG
 ConvertDataSetRangeToAtaLbaRanges(
-    _Inout_ PULONGLONG CurrentRangeStartLba,
-    _Inout_ PULONGLONG CurrentRangeLbaCount,
-    _In_reads_bytes_(BufferSize) PCHAR DestBuffer,
-    _In_ ULONG  BufferSize
+    __inout PULONGLONG CurrentRangeStartLba,
+    __inout PULONGLONG CurrentRangeLbaCount,
+    __in_bcount(BufferSize) PCHAR DestBuffer,
+    __in ULONG  BufferSize
     )
 /*++
 
@@ -5153,11 +5410,11 @@ Return Value:
 __inline
 VOID
 BuildHybridChangeByLbaCommand(
-    _Inout_ PAHCI_H2D_REGISTER_FIS CFIS,
-    _In_ UCHAR                  TargetPriority,
-    _In_ ULONGLONG              StartLba,
-    _In_ USHORT                 LbaCount,
-    _In_ BOOLEAN                CacheBehavior
+    __inout PAHCI_H2D_REGISTER_FIS CFIS,
+    __in UCHAR                  TargetPriority,
+    __in ULONGLONG              StartLba,
+    __in USHORT                 LbaCount,
+    __in BOOLEAN                CacheBehavior
     )
 /*++
 Routine Description:
@@ -5205,8 +5462,8 @@ Return Value:
 
 VOID
 HybridChangeByLbaCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 {
     PAHCI_SRB_EXTENSION             srbExtension = GetSrbExtension(Srb);
@@ -5291,8 +5548,8 @@ HybridChangeByLbaCompletion(
 
 ULONG
 HybridChangeByLba(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 /*++
 Routine Description:
@@ -5440,8 +5697,8 @@ Return Value:
 __inline
 VOID
 BuildHybridEvictCommand(
-    _Inout_ PAHCI_H2D_REGISTER_FIS CFIS,
-    _In_ USHORT                 BlockCount
+    __inout PAHCI_H2D_REGISTER_FIS CFIS,
+    __in USHORT                 BlockCount
     )
 /*++
 Routine Description:
@@ -5474,8 +5731,8 @@ Return Value:
 
 VOID
 HybridEvictCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
 )
 /*++
 
@@ -5593,8 +5850,8 @@ Return Value:
 
 ULONG
 HybridEvict(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 {
     ULONG               status = STOR_STATUS_SUCCESS;
@@ -5779,8 +6036,8 @@ Exit:
 
 ULONG
 DsmGeneralIoctlProcess(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     )
 /*++
 Routine Description:
@@ -5857,6 +6114,5 @@ Return Value:
 #else
 #pragma warning(default:4214)
 #pragma warning(default:4201)
-#pragma warning(default:26015)
 #endif
 

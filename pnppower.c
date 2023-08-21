@@ -15,6 +15,10 @@ Notes:
 
 Revision History:
 
+        Nathan Obr (natobr),  February 2005 - September 2006 rev 1 (NCQ, LPM, Hotplug, persistant state)
+                              December 2006 - August 2007    rev 2 (async)
+        Michael Xing (xiaoxing),  December 2009 - initial Storport miniport version
+
 --*/
 
 #pragma warning(push)
@@ -39,14 +43,14 @@ static const GUID LINK_POWER_ACPI_DSM_GUID = {
 
 VOID
 LogPageDiscoveryCompletion (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb
     );
 
 
 BOOLEAN
 AhciPortInitialize(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
 /*++
@@ -192,6 +196,8 @@ NOTE: as this routine is invoked from FindAdapter where the adapter might not be
   //4.6 Setup Device Identify Data and Inquiry Data buffers
     ChannelExtension->DeviceExtension[0].IdentifyDataPhysicalAddress = StorPortGetPhysicalAddress(adapterExtension, NULL, (PVOID)ChannelExtension->DeviceExtension[0].IdentifyDeviceData, &mappedLength);
     ChannelExtension->DeviceExtension[0].InquiryDataPhysicalAddress = StorPortGetPhysicalAddress(adapterExtension, NULL, (PVOID)ChannelExtension->DeviceExtension[0].InquiryData, &mappedLength);
+    // setup physical address correctly, otherwise we get a BSOD KERNEL_APC_PENDING_DURING_EXIT
+    ChannelExtension->DeviceExtension[0].ReadLogExtPageDataPhysicalAddress = StorPortGetPhysicalAddress(adapterExtension, NULL, (PVOID)ChannelExtension->DeviceExtension[0].ReadLogExtPageData, &mappedLength);
 
 
   //4.8 Setup STOR_ADDRESS for the device. StorAHCI uses Bus/Target/Lun addressing model, thus uses STOR_ADDRESS_TYPE_BTL8.
@@ -245,7 +251,7 @@ NOTE: as this routine is invoked from FindAdapter where the adapter might not be
 
 BOOLEAN
 AhciAdapterPowerUp(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 /*++
     Indicates that the adapter is being powered up.
@@ -296,7 +302,7 @@ Return Values:
 
 BOOLEAN
 AhciAdapterPowerDown(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 /*++
     Indicates that the adapter is being powered down.
@@ -337,7 +343,7 @@ Return Values:
 
 VOID
 AhciPortStop(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
 /*++
@@ -401,7 +407,7 @@ Return Values:
 
 VOID
 AhciPortPowerUp(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
 /*++
@@ -485,7 +491,7 @@ Return Values:
 
 VOID
 AhciPortPowerDown(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
 /*++
@@ -532,8 +538,8 @@ Return Values:
 
 VOID
 ReportLunsComplete(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     //Port start completed. Prepare device list.
@@ -607,7 +613,7 @@ ReportLunsComplete(
 
 VOID
 InitQueryLogPages (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 /*++
     Initialize Log Pages to Read.
@@ -714,15 +720,15 @@ Return Values:
 
 VOID
 IssueReadLogExtCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ UCHAR  LogAddress,
-    _In_ USHORT PageNumber,
-    _In_ USHORT BlockCount,
-    _In_ USHORT FeatureField,
-    _In_ PSTOR_PHYSICAL_ADDRESS PhysicalAddress,
-    _In_ PVOID DataBuffer,
-    _In_opt_ PSRB_COMPLETION_ROUTINE CompletionRoutine
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in UCHAR  LogAddress,
+    __in USHORT PageNumber,
+    __in USHORT BlockCount,
+    __in USHORT FeatureField,
+    __in PSTOR_PHYSICAL_ADDRESS PhysicalAddress,
+    __in PVOID DataBuffer,
+    __in_opt PSRB_COMPLETION_ROUTINE CompletionRoutine
     )
 /*++
     Issue READ LOG EXT command to device
@@ -794,7 +800,7 @@ Return Values:
 __inline
 USHORT
 GetNextQueryLogPageIndex (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
 )
 /*++
     Get an Index value that log page should be queried.
@@ -827,9 +833,9 @@ Return Values:
 __inline
 VOID
 ReadQueryLogPage (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ USHORT                  Index
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX  Srb,
+    __in USHORT                  Index
 )
 {
     IssueReadLogExtCommand( ChannelExtension,
@@ -848,10 +854,10 @@ ReadQueryLogPage (
 __inline
 VOID
 UpdateQueryLogPageSupportive (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ UCHAR                   LogAddress,
-    _In_ USHORT                  PageNumber,
-    _In_ BOOLEAN                 Supported
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in UCHAR                   LogAddress,
+    __in USHORT                  PageNumber,
+    __in BOOLEAN                 Supported
 )
 /*++
     Get an Index value that log page should be queried.
@@ -884,12 +890,19 @@ Return Values:
 
 VOID
 LogPageDiscoveryCompletion (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 /*
     This process is to discover all needed information from general log pages.
     The process is initiated by reading log directory when Identify Device command completes.
+
+    Sequence:
+        Log Directory
+        Device Statistics Log - Supported Pages
+        Device Statistics Log - General Statistics
+        Identify Device Data Log - Supported Pages
+        Identify Device Data Log - SATA Page
 
 
 */
@@ -1102,8 +1115,8 @@ LogPageDiscoveryCompletion (
 
 VOID
 AhciPortIdentifyDevice(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
   )
 {
     PAHCI_SRB_EXTENSION srbExtension;
@@ -1196,8 +1209,8 @@ AhciPortIdentifyDevice(
 
 VOID
 AhciPortNVCacheCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
   )
 {
     PSRB_IO_CONTROL         srbControl;
@@ -1260,8 +1273,8 @@ AhciPortNVCacheCompletion(
 
 VOID
 AhciPortSmartCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
   )
 {
     PSENDCMDOUTPARAMS           outParams;
@@ -1292,9 +1305,9 @@ AhciPortSmartCompletion(
 __inline
 VOID
 BuildLocalCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION        ChannelExtension,
-    _In_ PATA_TASK_FILE                 TaskFile,
-    _In_opt_ PSRB_COMPLETION_ROUTINE    CompletionRountine
+    __in PAHCI_CHANNEL_EXTENSION        ChannelExtension,
+    __in PATA_TASK_FILE                 TaskFile,
+    __in_opt PSRB_COMPLETION_ROUTINE    CompletionRountine
     )
 /*++
 
@@ -1311,11 +1324,11 @@ Affected Variables/Registers:
 
 --*/
 {
-    PSCSI_REQUEST_BLOCK srb;
+    PSCSI_REQUEST_BLOCK_EX srb;
     PAHCI_SRB_EXTENSION srbExtension;
 
     //
-    // Local Srb still uses SCSI_REQUEST_BLOCK type.
+    // Local Srb still uses SCSI_REQUEST_BLOCK_EX type.
     // do not touch field "srb->NextSrb". It should be only touched in queue related operations.
     //
     srb = &ChannelExtension->Local.Srb;
@@ -1338,8 +1351,8 @@ Affected Variables/Registers:
 
 VOID
 IssuePreservedSettingCommands(
-    _In_ PAHCI_CHANNEL_EXTENSION    ChannelExtension,
-    _In_opt_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in_opt PSCSI_REQUEST_BLOCK_EX Srb
   )
 /*++
     Uses the local SRB to send down the next Preserved Setting
@@ -1407,8 +1420,8 @@ Affected Variables/Registers:
 
 VOID
 IssueInitCommands(
-    _In_ PAHCI_CHANNEL_EXTENSION    ChannelExtension,
-    _In_opt_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in_opt PSCSI_REQUEST_BLOCK_EX Srb
   )
 /*++
     Uses the local SRB to send down the next Init Command or Preserved Setting Command
@@ -1460,8 +1473,8 @@ Affected Variables/Registers:
 
 VOID
 SetDateAndTimeCompletion(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -1479,7 +1492,7 @@ SetDateAndTimeCompletion(
 
 VOID
 BuildSetDateAndTimeTaskFile(
-    _In_ PATA_TASK_FILE  TaskFile
+    __in PATA_TASK_FILE  TaskFile
 )
 {
     LARGE_INTEGER       temp;
@@ -1523,9 +1536,9 @@ BuildSetDateAndTimeTaskFile(
 
 VOID
 IssueSetDateAndTimeCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _Inout_ PSCSI_REQUEST_BLOCK Srb,
-    _In_ BOOLEAN SendStandBy
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __inout PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN SendStandBy
   )
 /*++
 It assumes:
@@ -1535,13 +1548,14 @@ Called by:
 
 It performs:
     1 Builds a Set Date & Time taskfile and associates it with the provided Srb.
+    2 Starts processing the command
 Affected Variables/Registers:
     none
 
 --*/
 {
 
-    PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension((PSTORAGE_REQUEST_BLOCK)Srb);
+    PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
 
     NT_ASSERT(Srb != &ChannelExtension->Local.Srb);
 
@@ -1556,7 +1570,7 @@ Affected Variables/Registers:
 
 BOOLEAN
 AhciDeviceInitialize (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     STOR_LOCK_HANDLE lockhandle = {0};
@@ -1604,7 +1618,7 @@ AhciDeviceInitialize (
 
 VOID
 AhciDeviceStart (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 /*
     Running at PASSIVE_LEVEL
@@ -1626,7 +1640,7 @@ AhciDeviceStart (
 __inline
 BOOLEAN
 IsLpmModeSetting(
-    _In_ PSTOR_POWER_SETTING_INFO PowerInfo
+    __in PSTOR_POWER_SETTING_INFO PowerInfo
     )
 {
     if (PowerInfo->PowerSettingGuid.Data1 == 0x0b2d69d7) {
@@ -1649,7 +1663,7 @@ IsLpmModeSetting(
 __inline
 BOOLEAN
 IsLpmAdaptiveSetting(
-    _In_ PSTOR_POWER_SETTING_INFO PowerInfo
+    __in PSTOR_POWER_SETTING_INFO PowerInfo
     )
 {
     if (PowerInfo->PowerSettingGuid.Data1 == 0xDAB60367) {
@@ -1671,7 +1685,7 @@ IsLpmAdaptiveSetting(
 
 UCHAR
 SetAllowedLpmStates(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
    // Return Value: disabled modes;
 {
@@ -1723,8 +1737,8 @@ SetAllowedLpmStates(
 
 BOOLEAN
 AhciLpmSettingsModes(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ AHCI_LPM_POWER_SETTINGS LpmMode
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in AHCI_LPM_POWER_SETTINGS LpmMode
     )
 /*
     NOTE: this routine may prepared command in Local.Srb. Caller of this routine should try to start IO process.
@@ -1906,8 +1920,8 @@ AhciPortPowerSettingNotification(
 
 VOID
 AhciAutoPartialToSlumber(
-    _In_ PVOID AdapterExtension,
-    _In_opt_ PVOID ChannelExtension
+    __in PVOID AdapterExtension,
+    __in_opt PVOID ChannelExtension
 )
 /*
     NOTE: input parameter - Context is required as this is a callback function. But it's not used by this function.
@@ -1983,6 +1997,8 @@ AhciAutoPartialToSlumber(
         // 
         cmd.ICC = 1;
         StorPortWriteRegisterUlong(channelExtension->AdapterExtension, &channelExtension->Px->CMD.AsUlong, cmd.AsUlong);
+
+        // 2.2 set into Slumber state.
         ssts.AsUlong = StorPortReadRegisterUlong(channelExtension->AdapterExtension, &channelExtension->Px->SSTS.AsUlong);
         for (waitTime = 0; (waitTime < waitTimeLimit) && (ssts.IPM != 1); waitTime += 10) {
             //
@@ -2042,8 +2058,8 @@ AhciAutoPartialToSlumber(
 
 BOOLEAN
 AhciAdapterPowerSettingNotification(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension,
-    _In_ PSTOR_POWER_SETTING_INFO PowerSettingInfo
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension,
+    __in PSTOR_POWER_SETTING_INFO PowerSettingInfo
     )
 {
     ULONG i;
@@ -2059,7 +2075,7 @@ AhciAdapterPowerSettingNotification(
 
 VOID
 AhciPortGetInitCommands(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     // Read _GTF from ACPI
@@ -2234,7 +2250,7 @@ exit:
 
 VOID
 AhciPortEvaluateSDDMethod(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     ULONG   status = STOR_STATUS_SUCCESS;
@@ -2290,7 +2306,7 @@ Exit:
 
 VOID
 AhciAdapterEvaluateDSMMethod(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     ULONG   status = STOR_STATUS_SUCCESS;
@@ -2418,9 +2434,9 @@ Exit:
 
 VOID
 AhciPortAcpiDSMControl(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension,
-    _In_ ULONG                   PortNumber,
-    _In_ BOOLEAN                 Sleep
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension,
+    __in ULONG                   PortNumber,
+    __in BOOLEAN                 Sleep
   )
 {
     ULONG   status = STOR_STATUS_SUCCESS;

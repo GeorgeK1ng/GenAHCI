@@ -12,6 +12,8 @@ Abstract:
 
 Authors:
 
+    Michael Xing (xiaoxing), December 2009
+
 --*/
 
 #pragma once
@@ -260,7 +262,7 @@ typedef struct _SLOT_CONTENT {
     UCHAR                   CommandHistoryIndex;
     SLOT_STATE_FLAGS        StateFlags;
     UCHAR                   Reserved0[2];
-    PSTORAGE_REQUEST_BLOCK  Srb;
+    PSCSI_REQUEST_BLOCK_EX     Srb;
     PAHCI_COMMAND_HEADER    CmdHeader;
     PVOID                   Reserved;
 } SLOT_CONTENT, *PSLOT_CONTENT;
@@ -310,14 +312,14 @@ typedef struct _CHANNEL_START_STATE {
 
 typedef VOID
 (*PSRB_COMPLETION_ROUTINE) (
-    _In_ PAHCI_CHANNEL_EXTENSION    ChannelExtension,
-    _In_opt_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in_opt PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 typedef struct _LOCAL_SCATTER_GATHER_LIST {
     ULONG                       NumberOfElements;
     ULONG_PTR                   Reserved;
-    _Field_size_(NumberOfElements)
+    __field_ecount(NumberOfElements)
     STOR_SCATTER_GATHER_ELEMENT List[33];
 } LOCAL_SCATTER_GATHER_LIST, *PLOCAL_SCATTER_GATHER_LIST;
 
@@ -347,7 +349,7 @@ typedef struct _AHCI_SRB_EXTENSION {
 } AHCI_SRB_EXTENSION, *PAHCI_SRB_EXTENSION;
 
 typedef struct _LOCAL_COMMAND {
-    SCSI_REQUEST_BLOCK      Srb;
+    SCSI_REQUEST_BLOCK_EX      Srb;
     PAHCI_SRB_EXTENSION     SrbExtension;
     STOR_PHYSICAL_ADDRESS   SrbExtensionPhysicalAddress;
 } LOCAL_COMMAND, *PLOCAL_COMMAND;
@@ -362,8 +364,8 @@ typedef enum {
 typedef
 BOOLEAN
 (*PAHCI_TIMER_CALLBACK) (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PVOID Context
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PVOID Context
     );
 
 typedef struct _STORAHCI_QUEUE {
@@ -404,7 +406,7 @@ typedef struct _AHCI_CHANNEL_EXTENSION {
 
 // Port runtime power management
     PSTOR_POFX_DEVICE       PoFxDevice;
-    UCHAR                   PoFxFState;         // Current F-State of the unit
+    UCHAR                   PoFxState;      //Current F-State of the unit
     STOR_DEVICE_POWER_STATE DevicePowerState;   // Current D-State of the unit.
     
     //
@@ -584,15 +586,15 @@ typedef struct _AHCI_DUMP_CONTEXT {
 // Storport miniport driver entry routines, with prefix: "AhciHw"
 sp_DRIVER_INITIALIZE DriverEntry;
 
-HW_FIND_ADAPTER AhciHwFindAdapter;
+HW_FIND_ADAPTER_EX AhciHwFindAdapter;
 
 HW_INITIALIZE AhciHwInitialize;
 
 HW_PASSIVE_INITIALIZE_ROUTINE AhciHwPassiveInitialize;
 
-HW_STARTIO AhciHwStartIo;
+HW_STARTIO_EX AhciHwStartIo;
 
-HW_BUILDIO AhciHwBuildIo;
+HW_BUILDIO_EX AhciHwBuildIo;
 
 HW_INTERRUPT AhciHwInterrupt;
 
@@ -607,13 +609,13 @@ HW_UNIT_CONTROL AhciHwUnitControl;
 
 VOID
 AhciGetNextIos (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
     );
 
 VOID
 AhciDeviceStart (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     );
 
 //

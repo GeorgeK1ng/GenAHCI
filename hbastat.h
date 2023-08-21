@@ -14,13 +14,15 @@ Notes:
 
 Revision History:
 
+        Nathan Obr (natobr),  February 2005
+        Michael Xing (xiaoxing),  December 2009
 --*/
 
 #pragma once
 
 BOOLEAN
 AhciAdapterReset( 
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     );
 
 VOID
@@ -37,74 +39,74 @@ P_NotRunning(
 
 VOID
 AhciAdapterRunAllPorts(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     );
 
 VOID
 RunNextPort(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
     );
 
 VOID
 P_Running_StartAttempt(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
     );
 
 BOOLEAN
 P_Running(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     );
 
 HW_TIMER_EX P_Running_Callback;
 
 VOID
 P_Running_WaitOnDET(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     );
 
 VOID
 P_Running_WaitWhileDET1(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     );
 
 VOID
 P_Running_WaitOnDET3(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     );
 
 VOID
 P_Running_WaitOnFRE(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     );
 
 VOID
 P_Running_WaitOnBSYDRQ(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     );
 
 VOID
 P_Running_StartFailed(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN TimerCallbackProcess
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN TimerCallbackProcess
     );
 
 BOOLEAN
 AhciPortReset (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN CompleteAllRequests
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN CompleteAllRequests
     );
 
 VOID
 AhciPortErrorRecovery(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     );
 
 

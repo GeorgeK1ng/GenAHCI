@@ -14,14 +14,16 @@ Notes:
 
 Revision History:
 
+        Nathan Obr (natobr),  February 2005
+        Michael Xing (xiaoxing),  December 2009
 --*/
 
 #pragma once
 
 ULONG
 GetSlotToActivate(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ ULONG                   TargetSlots
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in ULONG                   TargetSlots
     );
 
 UCHAR
@@ -31,32 +33,32 @@ GetSingleIo(
 
 BOOLEAN
 ActivateQueue(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
     );
 
 VOID
 AddQueue (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _Inout_ PSTORAHCI_QUEUE     Queue,
-    _In_ PSTORAGE_REQUEST_BLOCK Srb,
-    _In_ ULONG Signature,
-    _In_ UCHAR Tag
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __inout PSTORAHCI_QUEUE Queue,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in ULONG Signature,
+    __in UCHAR Tag
     );
 
-PSTORAGE_REQUEST_BLOCK
+PSCSI_REQUEST_BLOCK_EX
 RemoveQueue (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _Inout_ PSTORAHCI_QUEUE Queue,
-    _In_ ULONG Signature,
-    _In_ UCHAR Tag
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __inout PSTORAHCI_QUEUE Queue,
+    __in ULONG Signature,
+    __in UCHAR Tag
     );
 
 VOID
 AhciCompleteIssuedSRBs(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ UCHAR SrbStatus,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in UCHAR SrbStatus,
+    __in BOOLEAN AtDIRQL
   );
 
 VOID
@@ -73,49 +75,49 @@ SRBtoATAPI_CFIS(
 
 VOID
 CfistoATA_CFIS(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSLOT_CONTENT SlotContent
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSLOT_CONTENT SlotContent
   );
 
 ULONG
 SRBtoPRDT(
-    _In_ PVOID ChannelExtension,
-    _In_ PSLOT_CONTENT SlotContent
+    __in PVOID ChannelExtension,
+    __in PSLOT_CONTENT SlotContent
   );
 
 VOID
 SRBtoCmdHeader(
-    _In_ PVOID ChannelExtension,
-    _In_ PSLOT_CONTENT SlotContent,
-    _In_ ULONG Length,
-    _In_ BOOLEAN Reset
+    __in PVOID ChannelExtension,
+    __in PSLOT_CONTENT SlotContent,
+    __in ULONG Length,
+    __in BOOLEAN Reset
   );
 
 BOOLEAN
 AhciProcessIo(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN AtDIRQL
     );
 
 BOOLEAN
 AhciFormIo(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN AtDIRQL
     );
 
-PSCSI_REQUEST_BLOCK
+PSCSI_REQUEST_BLOCK_EX
 BuildRequestSenseSrb(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  FailingSrb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX FailingSrb
     );
 
 VOID
 AhciPortFailAllIos(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ UCHAR   SrbStatus,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in UCHAR   SrbStatus,
+    __in BOOLEAN AtDIRQL
     );
 
 HW_DPC_ROUTINE AhciPortSrbCompletionDpcRoutine;

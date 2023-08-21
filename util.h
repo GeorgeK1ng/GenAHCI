@@ -14,20 +14,19 @@ Notes:
 
 Revision History:
 
+        Nathan Obr (natobr),  February 2005
+        Michael Xing (xiaoxing),  December 2009
 --*/
 
 
 #pragma once
 
-#define MS_TO_100NS(ms) ((ULONGLONG)10000 *(ms)) // Converts milliseconds to 100ns.
-#define MS_TO_US(ms) ((ULONGLONG)1000 *(ms))      // Converts milliseconds to microseconds.
-
-_At_buffer_(Buffer, _I_, BufferSize, _Post_equal_to_(0))
+//_At_buffer_(Buffer, _I_, BufferSize, _Post_equal_to_(0))
 __inline
 VOID
 AhciZeroMemory(
-    _Out_writes_(BufferSize) PCHAR Buffer,
-    _In_ ULONG BufferSize
+    __out __field_bcount(BufferSize) PCHAR Buffer,
+    __in ULONG BufferSize
     )
 {
     ULONG i;
@@ -37,13 +36,13 @@ AhciZeroMemory(
     }
 }
 
-_At_buffer_(Buffer, _I_, BufferSize, _Post_equal_to_(Fill))
+//_At_buffer_(Buffer, _I_, BufferSize, _Post_equal_to_(Fill))
 __inline
 VOID
 AhciFillMemory(
-    _Out_writes_(BufferSize) PCHAR Buffer,
-    _In_ ULONG BufferSize,
-    _In_ CHAR  Fill
+    __out __field_bcount(BufferSize) PCHAR Buffer,
+    __in ULONG BufferSize,
+    __in CHAR  Fill
     )
 {
     ULONG i;
@@ -56,8 +55,8 @@ AhciFillMemory(
 __inline
 BOOLEAN
 IsPortValid(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension,
-    _In_ ULONG PathId
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension,
+    __in ULONG PathId
     )
 {
     return ( (PathId <= AdapterExtension->HighestPort) && (AdapterExtension->PortExtension[PathId] != NULL) );
@@ -66,7 +65,7 @@ IsPortValid(
 __inline
 BOOLEAN
 IsPortStartCapable(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 /*
     Indicates if a port can be started or port can process IO
@@ -82,17 +81,13 @@ IsPortStartCapable(
 __inline
 PAHCI_SRB_EXTENSION
 GetSrbExtension (
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PCHAR       tempBuffer;
     ULONG_PTR   leftBytes;
 
-    if (Srb->Function == SRB_FUNCTION_STORAGE_REQUEST_BLOCK) {
-        tempBuffer = (PCHAR)Srb->MiniportContext;
-    } else {
-        tempBuffer = (PCHAR)((PSCSI_REQUEST_BLOCK)Srb)->SrbExtension;
-    }
+        tempBuffer = (PCHAR)((PSCSI_REQUEST_BLOCK_EX)Srb)->SrbExtension;
 
     //
     // Use lower 32bit is good enough for this calculation.
@@ -115,7 +110,7 @@ GetSrbExtension (
 __inline
 VOID
 MarkSrbToBeCompleted(
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -125,7 +120,7 @@ MarkSrbToBeCompleted(
 __inline
 BOOLEAN
 IsDataTransferNeeded(
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -136,7 +131,7 @@ IsDataTransferNeeded(
 __inline
 BOOLEAN
 IsDumpMode(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 /*
 Return Value:
@@ -150,7 +145,7 @@ Return Value:
 __inline
 BOOLEAN
 IsDumpCrashMode(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     return (AdapterExtension->DumpMode == DUMP_MODE_CRASH);
@@ -159,7 +154,7 @@ IsDumpCrashMode(
 __inline
 BOOLEAN
 IsDumpHiberMode(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     return (AdapterExtension->DumpMode == DUMP_MODE_HIBER);
@@ -168,7 +163,7 @@ IsDumpHiberMode(
 __inline
 BOOLEAN
 IsDumpMarkMemoryMode(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     return (AdapterExtension->DumpMode == DUMP_MODE_MARK_MEMORY);
@@ -177,7 +172,7 @@ IsDumpMarkMemoryMode(
 __inline
 BOOLEAN
 IsDumpResumeMode(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     return (AdapterExtension->DumpMode == DUMP_MODE_RESUME);
@@ -187,7 +182,7 @@ IsDumpResumeMode(
 __inline
 BOOLEAN
 IsMsnEnabled(
-    _In_ PAHCI_DEVICE_EXTENSION DeviceExtension
+    __in PAHCI_DEVICE_EXTENSION DeviceExtension
     )
 {
     return ( (DeviceExtension->DeviceParameters.AtaDeviceType == DeviceIsAta) &&
@@ -197,7 +192,7 @@ IsMsnEnabled(
 __inline
 BOOLEAN
 IsRmfEnabled(
-    _In_ PAHCI_DEVICE_EXTENSION DeviceExtension
+    __in PAHCI_DEVICE_EXTENSION DeviceExtension
     )
 {
     return ( (DeviceExtension->DeviceParameters.AtaDeviceType == DeviceIsAta) &&
@@ -208,7 +203,7 @@ IsRmfEnabled(
 __inline
 BOOLEAN
 NoFlushDevice(
-    _In_ PAHCI_DEVICE_EXTENSION DeviceExtension
+    __in PAHCI_DEVICE_EXTENSION DeviceExtension
     )
 {
     return ( (DeviceExtension->DeviceParameters.AtaDeviceType == DeviceIsAta) &&
@@ -220,7 +215,7 @@ NoFlushDevice(
 __inline
 BOOLEAN
 IsTapeDevice(
-    _In_ PAHCI_DEVICE_EXTENSION DeviceExtension
+    __in PAHCI_DEVICE_EXTENSION DeviceExtension
     )
 {
     return ( (DeviceExtension->DeviceParameters.AtaDeviceType == DeviceIsAtapi) &&
@@ -231,7 +226,7 @@ IsTapeDevice(
 __inline
 BOOLEAN
 IsNCQCommand (
-    _In_ PAHCI_SRB_EXTENSION SrbExtension
+    __in PAHCI_SRB_EXTENSION SrbExtension
     )
 /*++
     Determine if a command is NCQ command.
@@ -242,6 +237,7 @@ Return Value:
 {
     UCHAR command = IDE_COMMAND_NOT_VALID;
 
+    // NvCachePassCommand needs to be checked first as it's also ATA command
     if ( IsAtaCfisPayload(SrbExtension->AtaFunction) ) {
         command = SrbExtension->Cfis.Command;
     } else if ( IsAtaCommand(SrbExtension->AtaFunction) ) {
@@ -262,7 +258,7 @@ Return Value:
 __inline
 BOOLEAN
 IsNcqReadWriteCommand (
-    _In_ PAHCI_SRB_EXTENSION SrbExtension
+    __in PAHCI_SRB_EXTENSION SrbExtension
     )
 /*++
     Determine if a command is NCQ R/W command.
@@ -289,17 +285,18 @@ Return Value:
 __inline
 BOOLEAN
 IsNCQWriteCommand (
-    _In_ PAHCI_SRB_EXTENSION SrbExtension
+    __in PAHCI_SRB_EXTENSION SrbExtension
     )
 /*++
     Determine if a command is NCQ Write command.
 
 Return Value:
-    TRUE if CommandRegister is 0x61
+    TRUE if CommandRegister is 0x60, 0x61, 0x63, 0x64 or 0x65
 --*/
 {
     UCHAR command = IDE_COMMAND_NOT_VALID;
 
+    // NvCachePassCommand needs to be checked first as it's also ATA command
     if ( IsAtaCfisPayload(SrbExtension->AtaFunction) ) {
         command = SrbExtension->Cfis.Command;
     } else if ( IsAtaCommand(SrbExtension->AtaFunction) ) {
@@ -316,7 +313,7 @@ Return Value:
 __inline
 BOOLEAN
 IsNormalCommand (
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
 /*++
@@ -355,7 +352,7 @@ Return Value:
 __inline
 BOOLEAN
 IsReadWriteCommand(
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
 /*++
@@ -401,7 +398,7 @@ Return Value:
 __inline
 BOOLEAN
 NeedRequestSense (
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -420,7 +417,7 @@ NeedRequestSense (
 BOOLEAN
 __inline
 IsDeviceSupportsTrim (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     // word 169: bit 0 -- Trim function is supported.
@@ -431,7 +428,7 @@ IsDeviceSupportsTrim (
 __inline
 BOOLEAN
 IsDeviceSupportsAN(
-    _In_ PIDENTIFY_PACKET_DATA IdentifyPacketData
+    __in PIDENTIFY_PACKET_DATA IdentifyPacketData
     )
 {
     // This bit is actually from IDENTIFY_PACKET_DATA structure for ATAPI devices.
@@ -441,7 +438,7 @@ IsDeviceSupportsAN(
 __inline
 BOOLEAN
 IsDeviceEnabledAN(
-    _In_ PIDENTIFY_PACKET_DATA IdentifyPacketData
+    __in PIDENTIFY_PACKET_DATA IdentifyPacketData
     )
 {
     // This bit is actually from IDENTIFY_PACKET_DATA structure for ATAPI devices.
@@ -451,7 +448,7 @@ IsDeviceEnabledAN(
 __inline
 BOOLEAN
 IsExternalPort(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     if ( (ChannelExtension->Px->CMD.HPCP) ||
@@ -469,7 +466,7 @@ IsExternalPort(
 __inline
 BOOLEAN
 IsLPMCapablePort(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     // if a port is marked eSATA port but not having mechanical switch nor supporting Cold Presence Detection, don't turn on LPM on it.
@@ -488,7 +485,7 @@ IsLPMCapablePort(
 __inline
 BOOLEAN
 IsDeviceHybridInfoSupported(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     if ( (ChannelExtension->DeviceExtension[0].DeviceParameters.AtaDeviceType ==  DeviceIsAta) &&
@@ -503,7 +500,7 @@ IsDeviceHybridInfoSupported(
 __inline
 BOOLEAN
 IsDeviceHybridInfoEnabled(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     if ( IsDeviceHybridInfoSupported(ChannelExtension) &&
@@ -518,7 +515,7 @@ IsDeviceHybridInfoEnabled(
 __inline
 BOOLEAN
 IsDeviceGeneralPurposeLoggingSupported(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     if (IsAtaDevice(&ChannelExtension->DeviceExtension->DeviceParameters) &&
@@ -534,7 +531,7 @@ IsDeviceGeneralPurposeLoggingSupported(
 __inline
 BOOLEAN
 IsD3ColdAllowed(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     BOOLEAN allowed = TRUE;
@@ -548,7 +545,7 @@ IsD3ColdAllowed(
 __inline
 BOOLEAN
 IsPortD3ColdEnabled(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     // if device is D3Cold capable, return TRUE.
@@ -562,7 +559,7 @@ IsPortD3ColdEnabled(
 __inline
 BOOLEAN
 IsReceivingSystemPowerHints(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
 )
 {
     return (AdapterExtension->SystemPowerHintState != RaidSystemPowerUnknown);
@@ -578,7 +575,7 @@ IsReceivingSystemPowerHints(
 __inline
 BOOLEAN
 AdapterPoFxEnabled (
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
 )
 {
     return (AdapterExtension->StateFlags.PoFxEnabled == 1);
@@ -587,7 +584,7 @@ AdapterPoFxEnabled (
 __inline
 BOOLEAN
 PortPoFxEnabled (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     return (ChannelExtension->StateFlags.PoFxEnabled == 1);
@@ -596,8 +593,8 @@ PortPoFxEnabled (
 __inline
 BOOLEAN
 AdapterAcquireActiveReference (
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension,
-    _Inout_opt_ PBOOLEAN         InIdle
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension,
+    __inout_opt PBOOLEAN         InIdle
     )
 {
     BOOLEAN idle = FALSE;
@@ -628,7 +625,7 @@ AdapterAcquireActiveReference (
 __inline
 VOID
 AdapterReleaseActiveReference (
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     if (AdapterPoFxEnabled(AdapterExtension)) {
@@ -643,9 +640,9 @@ AdapterReleaseActiveReference (
 __inline
 BOOLEAN
 PortAcquireActiveReference (
-    _In_ PAHCI_CHANNEL_EXTENSION    ChannelExtension,
-    _In_opt_ PSTORAGE_REQUEST_BLOCK Srb,
-    _Inout_opt_ PBOOLEAN            InIdle
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in_opt PSCSI_REQUEST_BLOCK_EX Srb,
+    __inout_opt PBOOLEAN         InIdle
     )
 {
     BOOLEAN idle = FALSE;
@@ -654,9 +651,9 @@ PortAcquireActiveReference (
     if (PortPoFxEnabled(ChannelExtension)) {
         ULONG status;
 
-        status = StorPortPoFxActivateComponent(ChannelExtension->AdapterExtension,
+        status = StorPortPoFxActivateComponentEx(ChannelExtension->AdapterExtension,
                                                (PSTOR_ADDRESS)&ChannelExtension->DeviceExtension[0].DeviceAddress,
-                                               (PSCSI_REQUEST_BLOCK)Srb,
+                                               Srb,
                                                0,
                                                0);
         // STOR_STATUS_BUSY indicates that ActivateComponent is not completed yet.
@@ -685,8 +682,8 @@ PortAcquireActiveReference (
 __inline
 VOID
 PortReleaseActiveReference (
-    _In_ PAHCI_CHANNEL_EXTENSION    ChannelExtension,
-    _In_opt_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in_opt PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     if (PortPoFxEnabled(ChannelExtension)) {
@@ -695,9 +692,9 @@ PortReleaseActiveReference (
             CLRMASK(srbExtension->Flags, ATA_FLAGS_ACTIVE_REFERENCE);
         }
 
-        StorPortPoFxIdleComponent(ChannelExtension->AdapterExtension,
+        StorPortPoFxIdleComponentEx(ChannelExtension->AdapterExtension,
                                   (PSTOR_ADDRESS)&ChannelExtension->DeviceExtension[0].DeviceAddress,
-                                  (PSCSI_REQUEST_BLOCK)Srb,
+                                  Srb,
                                   0,
                                   0);
     } else {
@@ -708,7 +705,7 @@ PortReleaseActiveReference (
 __inline
 BOOLEAN
 DeviceIdentificationComplete(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     ULONG i;
@@ -726,7 +723,7 @@ DeviceIdentificationComplete(
 __inline
 ULONG
 RequestGetDataTransferLength (
-    _In_ PSTORAGE_REQUEST_BLOCK Srb
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -741,8 +738,8 @@ RequestGetDataTransferLength (
 __inline
 VOID
 RequestSetDataTransferLength (
-    _In_ PSTORAGE_REQUEST_BLOCK Srb,
-    _In_ ULONG                  Length
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in ULONG                  Length
     )
 {
     PAHCI_SRB_EXTENSION srbExtension = GetSrbExtension(Srb);
@@ -759,7 +756,7 @@ RequestSetDataTransferLength (
 __inline
 UCHAR
 NumberOfSetBits (
-    _In_ ULONG Value
+    __in ULONG Value
     )
 /*++
     This routine emulates the __popcnt intrinsic function.
@@ -829,7 +826,7 @@ Set_PxIE(
 __inline
 BOOLEAN
 IsFuaSupported(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     return (ChannelExtension->DeviceExtension->DeviceParameters.StateFlags.FuaSupported == 1);
@@ -838,7 +835,7 @@ IsFuaSupported(
 __inline
 BOOLEAN
 IsDeviceSupportsHIPM(
-    _In_ PIDENTIFY_DEVICE_DATA IdentifyDeviceData
+    __in PIDENTIFY_DEVICE_DATA IdentifyDeviceData
     )
 {
     return (IdentifyDeviceData->SerialAtaCapabilities.HIPM == TRUE);
@@ -847,7 +844,7 @@ IsDeviceSupportsHIPM(
 __inline
 BOOLEAN
 IsDeviceSupportsDIPM(
-    _In_ PIDENTIFY_DEVICE_DATA IdentifyDeviceData
+    __in PIDENTIFY_DEVICE_DATA IdentifyDeviceData
     )
 {
     return (IdentifyDeviceData->SerialAtaFeaturesSupported.DIPM == TRUE);
@@ -856,7 +853,7 @@ IsDeviceSupportsDIPM(
 __inline
 BOOLEAN
 NoLpmSupport(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     if (ChannelExtension->AdapterExtension->StateFlags.StoppedState == 1) {
@@ -878,7 +875,7 @@ NoLpmSupport(
 __inline
 BOOLEAN
 NeedToSetTransferMode(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     UNREFERENCED_PARAMETER(ChannelExtension); // make WDK sample build clean
@@ -888,7 +885,7 @@ NeedToSetTransferMode(
 __inline
 BOOLEAN
 IsSingleIoDevice(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     UNREFERENCED_PARAMETER(AdapterExtension); // make WDK sample build clean
@@ -898,7 +895,7 @@ IsSingleIoDevice(
 __inline
 BOOLEAN
 AdapterResetInInit(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     UNREFERENCED_PARAMETER(AdapterExtension); // make WDK sample build clean
@@ -908,7 +905,7 @@ AdapterResetInInit(
 __inline
 BOOLEAN
 IgnoreHotPlug(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     return (ChannelExtension->StateFlags.IgnoreHotplugInterrupt == 1);
@@ -917,7 +914,7 @@ IgnoreHotPlug(
 __inline
 BOOLEAN
 AdapterNoNonQueuedErrorRecovery(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     UNREFERENCED_PARAMETER(AdapterExtension); // make WDK sample build clean
@@ -927,7 +924,7 @@ AdapterNoNonQueuedErrorRecovery(
 __inline
 BOOLEAN
 CloResetEnabled(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension
     )
 {
     UNREFERENCED_PARAMETER(AdapterExtension); // make WDK sample build clean
@@ -937,7 +934,7 @@ CloResetEnabled(
 __inline
 BOOLEAN
 IsNCQSupported(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     if ( IsAtaDevice(&ChannelExtension->DeviceExtension->DeviceParameters) &&
@@ -953,7 +950,7 @@ IsNCQSupported(
 __inline
 ULONG
 GetOccupiedSlots (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     return ( ChannelExtension->SlotManager.CommandsIssued |
@@ -966,7 +963,7 @@ GetOccupiedSlots (
 __inline
 BOOLEAN
 ErrorRecoveryIsPending (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     return ( (ChannelExtension->StateFlags.CallAhciReset == 1) ||
@@ -977,18 +974,18 @@ ErrorRecoveryIsPending (
 __inline
 BOOLEAN
 IsMiniportInternalSrb (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb
     )
 {
-    return ( (Srb == (PSTORAGE_REQUEST_BLOCK)&ChannelExtension->Local.Srb) || 
-             (Srb == (PSTORAGE_REQUEST_BLOCK)&ChannelExtension->Sense.Srb) );
+    return ( (Srb == &ChannelExtension->Local.Srb) || 
+             (Srb == &ChannelExtension->Sense.Srb) );
 }
 
 __inline
 VOID
 PortClearPendingInterrupt (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     StorPortWriteRegisterUlong(ChannelExtension->AdapterExtension, &ChannelExtension->Px->SERR.AsUlong, (ULONG)~0);
@@ -999,17 +996,17 @@ PortClearPendingInterrupt (
 __inline
 BOOLEAN
 PartialToSlumberTransitionIsAllowed (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ AHCI_COMMAND            CMD,
-    _In_ ULONG                   CI,
-    _In_ ULONG                   SACT
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in AHCI_COMMAND            CMD,
+    __in ULONG                   CI,
+    __in ULONG                   SACT
     )
 {
     if ( (CI != 0) || (SACT != 0) ) {
         //device still has request pending
         return FALSE;
     }
-    
+
     if ((ChannelExtension->LastUserLpmPowerSetting  & 0x3) == 0) {
         //Neither HIPM nor DIPM is allowed. e.g. LastUserLpmPowerSetting --- bit 0: HIPM; bit 1: DIPM
         return FALSE;
@@ -1066,7 +1063,7 @@ PartialToSlumberTransitionIsAllowed (
 __inline
 ULONG
 GetHybridMaxLbaRangeCountForChangeLba (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     )
 {
     //
@@ -1083,55 +1080,55 @@ GetHybridMaxLbaRangeCountForChangeLba (
 
 VOID
 PortBusChangeProcess (
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension
     );
 
 PAHCI_MEMORY_REGISTERS
 GetABARAddress(
-    _In_ PAHCI_ADAPTER_EXTENSION AdapterExtension,
-    _In_ PPORT_CONFIGURATION_INFORMATION ConfigInfo
+    __in PAHCI_ADAPTER_EXTENSION AdapterExtension,
+    __in PPORT_CONFIGURATION_INFORMATION_EX ConfigInfo
     );
 
 VOID
 AhciCompleteJustSlottedRequest(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN AtDIRQL
     );
 
 VOID
 AhciCompleteRequest(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ PSTORAGE_REQUEST_BLOCK  Srb,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in PSCSI_REQUEST_BLOCK_EX Srb,
+    __in BOOLEAN AtDIRQL
     );
 
 BOOLEAN
 UpdateSetFeatureCommands(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ UCHAR OldFeatures,
-    _In_ UCHAR NewFeatures,
-    _In_ UCHAR OldSectorCount,
-    _In_ UCHAR NewSectorCount
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in UCHAR OldFeatures,
+    __in UCHAR NewFeatures,
+    __in UCHAR OldSectorCount,
+    __in UCHAR NewSectorCount
   );
 
 VOID
 GetAvailableSlot(
     PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    PSTORAGE_REQUEST_BLOCK  Srb
+    PSCSI_REQUEST_BLOCK_EX Srb
     );
 
 VOID
 ReleaseSlottedCommand(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ UCHAR SlotNumber,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in UCHAR SlotNumber,
+    __in BOOLEAN AtDIRQL
     );
 
 VOID
 RestorePreservedSettings(
-    _In_ PAHCI_CHANNEL_EXTENSION ChannelExtension,
-    _In_ BOOLEAN AtDIRQL
+    __in PAHCI_CHANNEL_EXTENSION ChannelExtension,
+    __in BOOLEAN AtDIRQL
     );
 
 VOID
@@ -1139,26 +1136,26 @@ AhciPortIssueInitCommands(
     PAHCI_CHANNEL_EXTENSION ChannelExtension
   );
 
-_Success_(return != FALSE)
+__success(return != FALSE)
 BOOLEAN
 CompareId (
-    _In_opt_ PSTR DeviceId,
-    _In_ ULONG  DeviceIdLength,
-    _In_opt_ PZZSTR TargetId,
-    _In_ ULONG  TargetIdLength,
-    _Inout_opt_ PULONG Value
+    __in_opt PSTR DeviceId,
+    __in ULONG  DeviceIdLength,
+    __in_opt PZZSTR TargetId,
+    __in ULONG  TargetIdLength,
+    __inout_opt PULONG Value
 );
 
 ULONG
 GetStringLength (
-    _In_ PSTR   String,
-    _In_ ULONG  MaxLength
+    __in PSTR   String,
+    __in ULONG  MaxLength
     );
 
 __inline
 VOID
 AhciUlongIncrement(
-    _Inout_ PULONG Value
+    __inout PULONG Value
     )
 {
     if (Value != NULL &&
